@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Hồ sơ cá nhân{% endblock %}
+
+{% block content %}
+<div class="content">
+    <h2>Hồ sơ cá nhân</h2>
+    <div class="section">
+        <p><strong>ID người dùng:</strong> {{ user.id_user }}</p>
+        <p><strong>Username:</strong> {{ user.username }}</p>
+        <p><strong>Tên:</strong> {{ user.full_name }}</p>
+        <p><strong>Phân quyền:</strong> {{ user.role|title }}</p>
+        <p><strong>Trường học:</strong> {{ user.id_school.name }}</p>
+        <p><strong>Email:</strong> {{ user.email }}</p>
+        <p><strong>Số điện thoại:</strong> {{ user.phone }}</p>
+        <p><strong>Điểm uy tín:</strong> {{ user.created_score }}</p>
+        <p><strong>Điểm cộng đồng:</strong> {{ user.social_score }}</p>
+    </div>
+
+    <div class="section">
+        <h3>Sự kiện đã tham gia</h3>
+        <div class="posts">
+            {% for event in joined_events %}
+            <div class="post-card">
+                <img src="{{ event.poster }}" alt="Ảnh sự kiện" />
+                <h4>{{ event.name }}</h4>
+                <p>Tổ chức: {{ event.id_group.name }}</p>
+                <p>Loại sự kiện: {{ event.type }}</p>
+                <p>Ngày tổ chức: {{ event.start_time|date:"d/m/Y" }}</p>
+                <p>Ngày kết thúc: {{ event.end_time|date:"d/m/Y" }}</p>
+                {% if event.status == "Đã duyệt" %}
+                    <button class="btn-primary" data-type="event" data-id="{{ event.id_event }}">Xem chi tiết</button>
+                {% else %}
+                    <button class="btn-primary" disabled>Đã đóng</button>
+                {% endif %}
+            </div>
+            {% empty %}
+                <p>Chưa tham gia sự kiện nào.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Bài đăng đã đăng</h3>
+        <div class="posts">
+            {% for post in user_posts %}
+            <div class="post-card">
+                <img src="{{ post.product_image }}" alt="Ảnh bài đăng" />
+                <h4>{{ post.title }}</h4>
+                <p>Người đăng: {{ user.full_name }}</p>
+                <p>Loại bài: {{ post.type_post }}</p>
+                <p>Giá: {{ post.price|floatformat:0 }} VND</p>
+                <button class="btn-primary" data-type="post" data-id="{{ post.id_post }}">Xem chi tiết</button>
+            </div>
+            {% empty %}
+                <p>Chưa có bài đăng nào.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Bài đăng đã mua/trao đổi thành công</h3>
+        <div class="posts">
+            {% for post in completed_posts %}
+            <div class="post-card">
+                <img src="{{ post.product_image }}" alt="Ảnh bài đăng" />
+                <h4>{{ post.title }}</h4>
+                <p>Người đăng: {{ post.id_user.full_name }}</p>
+                <p>Loại bài: {{ post.type_post }}</p>
+                {% if post.status == "Đã duyệt" %}
+                    <button class="btn-primary" data-type="post" data-id="{{ post.id_post }}">Xem chi tiết</button>
+                {% else %}
+                    <button class="btn-primary" disabled>Đã đóng</button>
+                {% endif %}
+            </div>
+            {% empty %}
+                <p>Chưa mua hoặc trao đổi bài đăng nào.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Thống kê theo tháng</h3>
+        <canvas id="statChart" width="400" height="200"></canvas>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('statChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ month_labels|safe }},
+            datasets: [
+                {
+                    label: 'Sản phẩm mua',
+                    data: {{ mua_data|safe }},
+                    backgroundColor: '#3498db'
+                },
+                {
+                    label: 'Sản phẩm trao đổi',
+                    data: {{ trao_doi_data|safe }},
+                    backgroundColor: '#2ecc71'
+                },
+                {
+                    label: 'Sự kiện tham gia',
+                    data: {{ su_kien_data|safe }},
+                    backgroundColor: '#e74c3c'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    precision: 0
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Ban Quản Trị</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Bootstrap JS and Popper.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
+  <!-- SheetJS for Excel file handling -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link href="{% static 'css/style_admin.css' %}" rel="stylesheet">
+  
+</head>
+<body>
+
+
+    
+    <!-- View Member Detail Section -->
+    <div id="view-member-detail" class="content-section">
+      <h1>Chi tiết thành viên</h1>
+      <div class="filter-group">
+        <div class="form-group">
+          <label for="memberTimeFilter">Thời gian:</label>
+          <select id="memberTimeFilter" onchange="viewMemberDetail(currentMemberIndex)">
+            <option value="newest">Gần nhất</option>
+            <option value="oldest">Xa nhất</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="memberTopFilter">Top:</label>
+          <select id="memberTopFilter" onchange="viewMemberDetail(currentMemberIndex)">
+            <option value="5">Top 5</option>
+            <option value="10">Top 10</option>
+            <option value="all">Tất cả</option>
+          </select>
+        </div>
+      </div>
+      <div id="memberDetailContent" class="post-detail"></div>
+      <div class="chart-grid">
+        <div class="chart-container">
+          <canvas id="memberStatsChart"></canvas>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="returnToPreviousSection()">Quay lại</button>
+    </div>
+
+    <!-- Edit Member Section -->
+    <div id="edit-member" class="content-section">
+      <h1>Sửa thông tin thành viên</h1>
+      <div class="form-group">
+        <label for="editUsername">Tên người dùng:</label>
+        <input type="text" id="editUsername" placeholder="Nhập tên người dùng">
+      </div>
+      <div class="form-group">
+        <label for="editEmail">Email:</label>
+        <input type="email" id="editEmail" placeholder="Nhập email">
+      </div>
+      <div class="form-group">
+        <label for="editPassword">Mật khẩu:</label>
+        <input type="text" id="editPassword" placeholder="Nhập mật khẩu">
+      </div>
+      <div class="form-group">
+        <label for="editRole">Phân quyền:</label>
+        <select id="editRole">
+          <option value="Quản trị viên">Quản trị viên</option>
+          <option value="Kiểm duyệt viên">Kiểm duyệt viên</option>
+          <option value="Giáo viên">Giáo viên</option>
+          <option value="Học sinh">Học sinh</option>
+          <option value="Hội nhóm">Hội nhóm</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="editSchool">Trường học:</label>
+        <select id="editSchool">
+          <option value="ĐH Bách Khoa Hà Nội">ĐH Bách Khoa Hà Nội</option>
+          <option value="ĐH Quốc Gia Hà Nội">ĐH Quốc Gia Hà Nội</option>
+          <option value="ĐH Sư Phạm Hà Nội">ĐH Sư Phạm Hà Nội</option>
+          <option value="ĐH Kinh Tế Quốc Dân">ĐH Kinh Tế Quốc Dân</option>
+        </select>
+      </div>
+      <button class="btn btn-success" onclick="saveMemberChanges()">Lưu thay đổi</button>
+      <button class="btn btn-primary" onclick="checkUnsavedChanges()">Quay lại</button>
+    </div>
+
+    <!-- Add Category Section -->
+    <div id="add-category" class="content-section">
+      <h1>Thêm danh mục</h1>
+      <div class="form-group">
+        <label for="categoryName">Tên danh mục:</label>
+        <input type="text" id="categoryName" placeholder="Nhập tên danh mục">
+      </div>
+      <div class="form-group">
+        <label for="categoryType">Loại danh mục:</label>
+        <select id="categoryType">
+          <option value="post">Bài đăng</option>
+          <option value="event">Sự kiện</option>
+        </select>
+      </div>
+      <button class="btn btn-success" onclick="addCategory()">Thêm</button>
+    </div>
+
+    <!-- View Categories Section -->
+    <div id="view-categories" class="content-section">
+      <h1>Danh sách danh mục</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>Tên danh mục</th>
+            <th>Loại</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="categoryList"></tbody>
+      </table>
+      <p id="noMatchMessageCategory" class="no-match-message">Không có danh mục phù hợp</p>
+    </div>
+
+    <!-- View Category Detail Section -->
+    <div id="view-category-detail" class="content-section">
+      <h1>Chi tiết danh mục</h1>
+      <div id="categoryDetailContent" class="post-detail"></div>
+      <div id="categoryPostsSection" style="display: none;">
+        <h2>Bài đăng thuộc danh mục</h2>
+        <div class="filter-group">
+          <div class="form-group">
+            <label for="filterTimePostCat">Thời gian đăng:</label>
+            <select id="filterTimePostCat" onchange="filterCategoryPosts()">
+              <option value="newest">Gần nhất</option>
+              <option value="oldest">Xa nhất</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterStatusPostCat">Trạng thái:</label>
+            <select id="filterStatusPostCat" onchange="filterCategoryPosts()">
+              <option value="all">Tất cả</option>
+              <option value="Đã duyệt">Đã duyệt</option>
+              <option value="Chưa duyệt">Chưa duyệt</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterTypePostCat">Loại bài đăng:</label>
+            <select id="filterTypePostCat" onchange="filterCategoryPosts()">
+              <option value="all">Tất cả</option>
+              <option value="Trao đổi">Trao đổi</option>
+              <option value="Thanh lý">Thanh lý</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterSchoolPostCat">Trường học:</label>
+            <select id="filterSchoolPostCat" onchange="filterCategoryPosts()">
+              <option value="all">Tất cả</option>
+              <option value="ĐH Bách Khoa Hà Nội">ĐH Bách Khoa Hà Nội</option>
+              <option value="ĐH Quốc Gia Hà Nội">ĐH Quốc Gia Hà Nội</option>
+              <option value="ĐH Sư Phạm Hà Nội">ĐH Sư Phạm Hà Nội</option>
+              <option value="ĐH Kinh Tế Quốc Dân">ĐH Kinh Tế Quốc Dân</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterClosedPostCat">Trạng thái đóng:</label>
+            <select id="filterClosedPostCat" onchange="filterCategoryPosts()">
+              <option value="all">Tất cả</option>
+              <option value="open">Chưa đóng</option>
+              <option value="closed">Đã đóng</option>
+            </select>
+          </div>
+        </div>
+        <div id="categoryPostList" class="post-grid"></div>
+        <p id="noMatchMessagePostCat" class="no-match-message">Không có bài đăng phù hợp</p>
+      </div>
+      <div id="categoryEventsSection" style="display: none;">
+        <h2>Sự kiện thuộc danh mục</h2>
+        <div class="filter-group">
+          <div class="form-group">
+            <label for="filterTimeEventCat">Thời gian tổ chức:</label>
+            <select id="filterTimeEventCat" onchange="filterCategoryEvents()">
+              <option value="newest">Gần nhất</option>
+              <option value="oldest">Xa nhất</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterStatusEventCat">Trạng thái:</label>
+            <select id="filterStatusEventCat" onchange="filterCategoryEvents()">
+              <option value="all">Tất cả</option>
+              <option value="Đã duyệt">Đã duyệt</option>
+              <option value="Chưa duyệt">Chưa duyệt</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterTypeEventCat">Loại sự kiện:</label>
+            <select id="filterTypeEventCat" onchange="filterCategoryEvents()">
+              <option value="all">Tất cả</option>
+              <option value="Gây quỹ">Gây quỹ</option>
+              <option value="Quyên góp">Quyên góp</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterSchoolEventCat">Trường học:</label>
+            <select id="filterSchoolEventCat" onchange="filterCategoryEvents()">
+              <option value="all">Tất cả</option>
+              <option value="ĐH Bách Khoa Hà Nội">ĐH Bách Khoa Hà Nội</option>
+              <option value="ĐH Quốc Gia Hà Nội">ĐH Quốc Gia Hà Nội</option>
+              <option value="ĐH Sư Phạm Hà Nội">ĐH Sư Phạm Hà Nội</option>
+              <option value="ĐH Kinh Tế Quốc Dân">ĐH Kinh Tế Quốc Dân</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filterClosedEventCat">Trạng thái đóng:</label>
+            <select id="filterClosedEventCat" onchange="filterCategoryEvents()">
+              <option value="all">Tất cả</option>
+              <option value="open">Chưa đóng</option>
+              <option value="closed">Đã đóng</option>
+            </select>
+          </div>
+        </div>
+        <div id="categoryEventList" class="post-grid"></div>
+        <p id="noMatchMessageEventCat" class="no-match-message">Không có sự kiện phù hợp</p>
+      </div>
+      <button class="btn btn-primary" onclick="returnToPreviousSection()">Quay lại</button>
+    </div>
+
+    <!-- Manage Posts Section -->
+    <div id="quan-ly-don" class="content-section">
+      <h1>Quản lý bài đăng</h1>
+      <div class="filter-group">
+        <div class="form-group">
+          <label for="filterTime">Thời gian đăng:</label>
+          <select id="filterTime" onchange="filterPosts()">
+            <option value="newest">Gần nhất</option>
+            <option value="oldest">Xa nhất</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterStatus">Trạng thái:</label>
+          <select id="filterStatus" onchange="filterPosts()">
+            <option value="all">Tất cả</option>
+            <option value="Đã duyệt">Đã duyệt</option>
+            <option value="Chưa duyệt">Chưa duyệt</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterType">Loại bài đăng:</label>
+          <select id="filterType" onchange="filterPosts()">
+            <option value="all">Tất cả</option>
+            <option value="Trao đổi">Trao đổi</option>
+            <option value="Thanh lý">Thanh lý</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterSchoolPost">Trường học:</label>
+          <select id="filterSchoolPost" onchange="filterPosts()">
+            <option value="all">Tất cả</option>
+            <option value="ĐH Bách Khoa Hà Nội">ĐH Bách Khoa Hà Nội</option>
+            <option value="ĐH Quốc Gia Hà Nội">ĐH Quốc Gia Hà Nội</option>
+            <option value="ĐH Sư Phạm Hà Nội">ĐH Sư Phạm Hà Nội</option>
+            <option value="ĐH Kinh Tế Quốc Dân">ĐH Kinh Tế Quốc Dân</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterClosed">Trạng thái đóng:</label>
+          <select id="filterClosed" onchange="filterPosts()">
+            <option value="all">Tất cả</option>
+            <option value="open">Chưa đóng</option>
+            <option value="closed">Đã đóng</option>
+          </select>
+        </div>
+      </div>
+      <div id="postList" class="post-grid"></div>
+      <p id="noMatchMessagePost" class="no-match-message">Không có bài đăng phù hợp</p>
+    </div>
+
+    <!-- View Post Detail Section -->
+    <div id="view-post-detail" class="content-section">
+      <h1>Chi tiết bài đăng</h1>
+      <div id="postDetailContent" class="post-detail"></div>
+      <div id="exchangeSection" style="display: none;">
+        <div class="filter-group">
+          <div class="form-group">
+            <label for="offerTimeFilter">Thời gian offer:</label>
+            <select id="offerTimeFilter" onchange="updateOfferStats()">
+              <option value="newest">Gần nhất</option>
+              <option value="oldest">Xa nhất</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="offerPriceFilter">Giá:</label>
+            <select id="offerPriceFilter" onchange="updateOfferStats()">
+              <option value="all">Tất cả</option>
+              <option value="high">Cao nhất</option>
+              <option value="low">Thấp nhất</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="offerCommunityFilter">Điểm cộng đồng:</label>
+            <select id="offerCommunityFilter" onchange="updateOfferStats()">
+              <option value="all">Tất cả</option>
+              <option value="high">Cao nhất</option>
+              <option value="low">Thấp nhất</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="offerReputationFilter">Điểm uy tín:</label>
+            <select id="offerReputationFilter" onchange="updateOfferStats()">
+              <option value="all">Tất cả</option>
+              <option value="high">Cao nhất</option>
+              <option value="low">Thấp nhất</option>
+            </select>
+          </div>
+        </div>
+        <table id="offerTable" class="offer-table">
+          <thead>
+            <tr>
+              <th>Tên người dùng</th>
+              <th>Offer</th>
+              <th>Giá đề xuất</th>
+              <th>Điểm cộng đồng</th>
+              <th>Điểm uy tín</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div id="sellSection" style="display: none;">
+        <p id="finalTradeInfo"></p>
+      </div>
+      <button class="btn btn-primary" onclick="returnToPreviousSection()">Quay lại</button>
+      <button class="btn btn-danger" onclick="closePost()">Đóng bài đăng</button>
+    </div>
+
+    <!-- Manage Events Section -->
+    <div id="quan-ly-san-pham" class="content-section">
+      <h1>Quản lý sự kiện</h1>
+      <div class="filter-group">
+        <div class="form-group">
+          <label for="filterTimeEvent">Thời gian tổ chức:</label>
+          <select id="filterTimeEvent" onchange="filterEvents()">
+            <option value="newest">Gần nhất</option>
+            <option value="oldest">Xa nhất</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterStatusEvent">Trạng thái:</label>
+          <select id="filterStatusEvent" onchange="filterEvents()">
+            <option value="all">Tất cả</option>
+            <option value="Đã duyệt">Đã duyệt</option>
+            <option value="Chưa duyệt">Chưa duyệt</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterTypeEvent">Loại sự kiện:</label>
+          <select id="filterTypeEvent" onchange="filterEvents()">
+            <option value="all">Tất cả</option>
+            <option value="Gây quỹ">Gây quỹ</option>
+            <option value="Quyên góp">Quyên góp</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterSchoolEvent">Trường học:</label>
+          <select id="filterSchoolEvent" onchange="filterEvents()">
+            <option value="all">Tất cả</option>
+            <option value="ĐH Bách Khoa Hà Nội">ĐH Bách Khoa Hà Nội</option>
+            <option value="ĐH Quốc Gia Hà Nội">ĐH Quốc Gia Hà Nội</option>
+            <option value="ĐH Sư Phạm Hà Nội">ĐH Sư Phạm Hà Nội</option>
+            <option value="ĐH Kinh Tế Quốc Dân">ĐH Kinh Tế Quốc Dân</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterClosedEvent">Trạng thái đóng:</label>
+          <select id="filterClosedEvent" onchange="filterEvents()">
+            <option value="all">Tất cả</option>
+            <option value="open">Chưa đóng</option>
+            <option value="closed">Đã đóng</option>
+          </select>
+        </div>
+      </div>
+      <div id="eventList" class="post-grid"></div>
+      <p id="noMatchMessageEvent" class="no-match-message">Không có sự kiện phù hợp</p>
+    </div>
+
+    <!-- View Event Detail Section -->
+    <div id="view-event-detail" class="content-section">
+      <h1>Chi tiết sự kiện</h1>
+      <div id="eventDetailContent" class="post-detail"></div>
+      <div class="filter-group">
+        <div class="form-group">
+          <label for="participantTimeFilter">Thời gian tham gia:</label>
+          <select id="participantTimeFilter" onchange="updateParticipantStats()">
+            <option value="day">Theo ngày</option>
+            <option value="month">Theo tháng</option>
+          </select>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-container">
+          <canvas id="participantStatsChart"></canvas>
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="form-group">
+          <label for="participantTimeSort">Sắp xếp thời gian:</label>
+          <select id="participantTimeSort" onchange="renderParticipantTable()">
+            <option value="newest">Gần nhất</option>
+            <option value="oldest">Xa nhất</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="participantSchoolFilter">Trường học:</label>
+          <select id="participantSchoolFilter" onchange="renderParticipantTable()">
+            <option value="all">Tất cả</option>
+            <option value="ĐH Bách Khoa Hà Nội">ĐH Bách Khoa Hà Nội</option>
+            <option value="ĐH Quốc Gia Hà Nội">ĐH Quốc Gia Hà Nội</option>
+            <option value="ĐH Sư Phạm Hà Nội">ĐH Sư Phạm Hà Nội</option>
+            <option value="ĐH Kinh Tế Quốc Dân">ĐH Kinh Tế Quốc Dân</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="participantTopFilter">Top:</label>
+          <select id="participantTopFilter" onchange="renderParticipantTable()">
+            <option value="5">Top 5</option>
+            <option value="10">Top 10</option>
+            <option value="all">Tất cả</option>
+          </select>
+        </div>
+      </div>
+      <table id="participantTable" class="offer-table">
+        <thead>
+          <tr>
+            <th>Tên người dùng</th>
+            <th>Tham gia</th>
+            <th>Số tiền/Đóng góp</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button class="btn btn-primary" onclick="returnToPreviousSection()">Quay lại</button>
+      <button class="btn btn-danger" onclick="closeEvent()">Đóng sự kiện</button>
+    </div>
+
+    <!-- Placeholder Sections -->
+    <div id="bao-cao-thong-ke" class="content-section">
+      <h1>Báo cáo thống kê</h1>
+      <p>Chức năng báo cáo thống kê sẽ được triển khai tại đây.</p>
+    </div>
+  </div>
+  <script>
+    // State management for navigation
+    let previousSection = 'dashboard';
+    let currentSection = 'dashboard';
+    let currentMemberIndex = null;
+    let currentPostIndex = null;
+    let currentEventIndex = null;
+    let currentCategoryIndex = null;
+    let filteredPosts = [];
+    let filteredEvents = [];
+    let filteredCategoryPosts = [];
+    let filteredCategoryEvents = [];
+    let memberStatsChart = null;
+    let participantStatsChart = null;
+    let originalMemberData = null;
+
+    const validSections = [
+      'dashboard', 'add-member', 'view-members', 'view-member-detail', 'edit-member',
+      'quan-ly-don', 'view-post-detail', 'quan-ly-san-pham', 'view-event-detail', 'bao-cao-thong-ke',
+      'add-category', 'view-categories', 'view-category-detail'
+    ];
+
+    let members = [
+      { username: 'user1', email: 'user1@example.com', password: 'pass1', role: 'Quản trị viên', school: 'ĐH Bách Khoa Hà Nội', communityPoints: 0 },
+      { username: 'user2', email: 'user2@example.com', password: 'pass2', role: 'Học sinh', school: 'ĐH Quốc Gia Hà Nội', communityPoints: 3, reputation: 85 },
+      { username: 'user3', email: 'user3@example.com', password: 'pass3', role: 'Giáo viên', school: 'ĐH Sư Phạm Hà Nội', communityPoints: 2, reputation: 70 }
+    ];
+
+    let posts = [
+      {
+        id: 1,
+        title: 'Bán sách cũ',
+        author: 'user1',
+        date: '2025-05-01',
+        type: 'Thanh lý',
+        status: 'Đã duyệt',
+        category: 'Sách',
+        content: 'Bán bộ sách giáo khoa lớp 12, còn mới 90%.',
+        price: 150000,
+        condition: 'Đã sử dụng 1 năm',
+        isClosed: false,
+        finalPrice: 140000,
+        finalBuyer: 'user2'
+      },
+      {
+        id: 2,
+        title: 'Trao đổi đồ dùng học tập',
+        author: 'user2',
+        date: '2025-05-02',
+        type: 'Trao đổi',
+        status: 'Chưa duyệt',
+        category: 'Đồ dùng học tập',
+        content: 'Trao đổi bút bi và bút chì, cần bút mực.',
+        price: null,
+        condition: 'Mới',
+        isClosed: false,
+        offers: [
+          { user: 'user1', offer: 'Bút mực', price: 0, communityPoints: 0, reputation: 0 },
+          { user: 'user3', offer: 'Bút chì', price: 0, communityPoints: 2, reputation: 70 }
+        ],
+        finalTrader: null
+      },
+      {
+        id: 3,
+        title: 'Bán bút mới',
+        author: 'user3',
+        date: '2025-05-03',
+        type: 'Thanh lý',
+        status: 'Đã duyệt',
+        category: 'Đồ dùng học tập',
+        content: 'Bán bút bi mới 100%.',
+        price: 50000,
+        condition: 'Mới',
+        isClosed: false
+      }
+    ];
+
+    let events = [
+      {
+        id: 1,
+        title: 'Gây quỹ xây dựng thư viện',
+        author: 'user1',
+        date: '2025-05-05',
+        type: 'Gây quỹ',
+        status: 'Đã duyệt',
+        category: 'Giáo dục',
+        content: 'Huy động 50 triệu VND để xây thư viện mới.',
+        targetAmount: 50000000,
+        collectedAmount: 30000000,
+        isClosed: false,
+        participants: [
+          { user: 'user2', contribution: '5000000 VND', details: 'Đóng góp tiền', date: '2025-05-05' },
+          { user: 'user3', contribution: 'Sách 10 cuốn', details: 'Quyên góp sách', date: '2025-05-06' }
+        ]
+      },
+      {
+        id: 2,
+        title: 'Quyên góp sách cũ',
+        author: 'user2',
+        date: '2025-05-06',
+        type: 'Quyên góp',
+        status: 'Chưa duyệt',
+        category: 'Sách',
+        content: 'Thu gom sách cũ cho học sinh vùng sâu.',
+        targetAmount: null,
+        collectedAmount: 0,
+        isClosed: false,
+        participants: []
+      }
+    ];
+
+    let transactions = [
+      { user: 'user2', type: 'buy', item: 'Sách cũ', date: '2025-05-03', amount: 140000 },
+      { user: 'user2', type: 'exchange', item: 'Bút chì', date: '2025-05-04', amount: 0 },
+      { user: 'user1', type: 'event', eventId: 1, date: '2025-05-05', amount: 5000000 }
+    ];
+
+    let categories = [
+      { id: 1, name: 'Sách', type: 'post' },
+      { id: 2, name: 'Đồ dùng học tập', type: 'post' },
+      { id: 3, name: 'Giáo dục', type: 'event' },
+      { id: 4, name: 'Sách', type: 'event' }
+    ];
+
+    const postsByTimeChart = new Chart(document.getElementById('postsByTimeChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6'],
+        datasets: [
+          {
+            label: 'Trao đổi',
+            data: [10, 12, 15, 8, 20, 18],
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Thanh lý',
+            data: [5, 8, 10, 12, 15, 10],
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    const postsByCategoryChart = new Chart(document.getElementById('postsByCategoryChart'), {
+      type: 'pie',
+      data: {
+        labels: ['Sách', 'Đồ dùng học tập', 'Khác'],
+        datasets: [{
+          data: [40, 35, 25],
+          backgroundColor: ['rgba(144, 238, 144, 0.8)', 'rgba(255, 99, 132, 0.8)', 'rgba(255, 215, 0, 0.8)']
+        }]
+      }
+    });
+
+    const newMembersChart = new Chart(document.getElementById('newMembersChart'), {
+      type: 'line',
+      data: {
+        labels: ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6'],
+        datasets: [
+          {
+            label: 'Học sinh',
+            data: [3, 7, 5, 10, 8, 12],
+            borderColor: 'rgba(54, 162, 235, 1)',
+            fill: false
+          },
+          {
+            label: 'Giáo viên',
+            data: [2, 3, 4, 5, 3, 6],
+            borderColor: 'rgba(255, 99, 132, 1)',
+            fill: false
+          }
+        ]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    const membersBySchoolChart = new Chart(document.getElementById('membersBySchoolChart'), {
+      type: 'pie',
+      data: {
+        labels: ['ĐH Bách Khoa Hà Nội', 'ĐH Quốc Gia Hà Nội', 'ĐH Sư Phạm Hà Nội', 'ĐH Kinh Tế Quốc Dân'],
+        datasets: [{
+          data: [30, 40, 20, 10],
+          backgroundColor: ['rgba(147, 112, 219, 0.8)', 'rgba(144, 238, 144, 0.8)', 'rgba(255, 182, 193, 0.8)', 'rgba(255, 215, 0, 0.8)']
+        }]
+      }
+    });
+
+    const eventsByStatusChart = new Chart(document.getElementById('eventsByStatusChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Đã duyệt', 'Chưa duyệt', 'Đã đóng'],
+        datasets: [
+          {
+            label: 'Gây quỹ',
+            data: [3, 1, 2],
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          },
+          {
+            label: 'Quyên góp',
+            data: [2, 1, 1],
+            backgroundColor: 'rgba(144, 238, 144, 0.2)',
+            borderColor: 'rgba(144, 238, 144, 1)',
+            borderWidth: 1
+          }
+        ]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    const fundraisingAmountChart = new Chart(document.getElementById('fundraisingAmountChart'), {
+      type: 'line',
+      data: {
+        labels: ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6'],
+        datasets: [{
+          label: 'Số tiền (nghìn VND)',
+          data: [10000, 15000, 20000, 25000, 30000, 35000],
+          borderColor: 'rgba(255, 99, 132, 1)',
+          fill: true
+        }]
+      },
+      options: { scales: { y: { beginAtZero: true } } }
+    });
+
+    
+    function toggleMenu(id) {
+      const menu = document.getElementById(id);
+      menu.style.display = (menu.style.display === "block") ? "none" : "block";
+    }
+
+    function showContent(sectionId) {
+      if (!validSections.includes(sectionId)) {
+        console.error(`Invalid sectionId: ${sectionId}. Defaulting to 'dashboard'.`);
+        sectionId = 'dashboard';
+      }
+
+      console.log(`Navigating from ${currentSection} to ${sectionId}`);
+      
+      if (currentSection !== sectionId) {
+        previousSection = currentSection;
+      }
+
+      document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+      });
+
+      const activeSection = document.getElementById(sectionId);
+      if (activeSection) {
+        activeSection.classList.add('active');
+        currentSection = sectionId;
+        console.log(`Current section updated to: ${currentSection}, Previous section: ${previousSection}`);
+      } else {
+        console.error(`Section with ID ${sectionId} not found.`);
+      }
+
+      if (sectionId === 'view-members') {
+        filterMembers();
+      }
+      if (sectionId === 'quan-ly-don') {
+        currentPostIndex = null;
+        filterPosts();
+      }
+      if (sectionId === 'quan-ly-san-pham') {
+        currentEventIndex = null;
+        filterEvents();
+      }
+      if (sectionId === 'view-categories') {
+        filterCategories();
+      }
+      if (sectionId === 'view-member-detail') {
+        updateMemberStats();
+      }
+    }
+
+    function returnToPreviousSection() {
+      console.log(`Return button clicked. Attempting to return to previous section: ${previousSection}`);
+
+      if (!previousSection || !validSections.includes(previousSection)) {
+        console.error(`Invalid previousSection: ${previousSection}. Defaulting to 'dashboard'.`);
+        previousSection = 'dashboard';
+      }
+
+      // Nếu đang ở view-category-detail và nhấn Quay lại, cần quay về view-categories
+      if (currentSection === 'view-category-detail' && previousSection !== 'view-categories') {
+        previousSection = 'view-categories';
+      }
+
+      showContent(previousSection);
+    }
+
+    function addMember() {
+      const username = document.getElementById('username').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const role = document.getElementById('role').value;
+      const school = document.getElementById('school').value;
+
+      if (username && email && password) {
+        members.push({ username, email, password, role, school, communityPoints: 0, reputation: 0 });
+        alert('Thêm thành viên thành công!');
+        document.getElementById('username').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('password').value = '';
+        document.getElementById('role').value = 'Quản trị viên';
+        document.getElementById('school').value = 'ĐH Bách Khoa Hà Nội';
+      } else {
+        alert('Vui lòng điền đầy đủ thông tin!');
+      }
+    }
+
+    function importExcel() {
+      const fileInput = document.getElementById('excelFile');
+      const file = fileInput.files[0];
+      if (!file) {
+        alert('Vui lòng chọn file Excel!');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+
+        console.log("Dữ liệu đọc từ file Excel:", jsonData);
+
+        let addedCount = 0;
+        const validRoles = ['Quản trị viên', 'Kiểm duyệt viên', 'Giáo viên', 'Học sinh', 'Hội nhóm'];
+        const validSchools = ['ĐH Bách Khoa Hà Nội', 'ĐH Quốc Gia Hà Nội', 'ĐH Sư Phạm Hà Nội', 'ĐH Kinh Tế Quốc Dân'];
+
+        let errorMessages = [];
+
+        jsonData.forEach((row, index) => {
+          const headers = Object.keys(row);
+          console.log(`Hàng ${index + 1} - Tiêu đề cột:`, headers);
+
+          const normalizeHeader = (header) => header.trim().normalize('NFC');
+          const username = row[headers.find(h => normalizeHeader(h) === normalizeHeader('Tên người dùng'))] || "";
+          const email = row[headers.find(h => normalizeHeader(h) === normalizeHeader('Email'))] || "";
+          const password = row[headers.find(h => normalizeHeader(h) === normalizeHeader('Mật khẩu'))] || "";
+          const role = row[headers.find(h => normalizeHeader(h) === normalizeHeader('Phân quyền'))] || "";
+          const school = row[headers.find(h => normalizeHeader(h) === normalizeHeader('Trường học'))] || "";
+
+          console.log(`Hàng ${index + 1} - Dữ liệu:`, { username, email, password, role, school });
+
+          let errors = [];
+          if (!username) errors.push("Tên người dùng trống");
+          if (!email) errors.push("Email trống");
+          if (!password) errors.push("Mật khẩu trống");
+          if (!role || !validRoles.includes(role)) errors.push(`Phân quyền không hợp lệ: ${role}`);
+          if (!school || !validSchools.includes(school)) errors.push(`Trường học không hợp lệ: ${school}`);
+
+          if (errors.length === 0) {
+            members.push({
+              username,
+              email,
+              password,
+              role,
+              school,
+              communityPoints: 0,
+              reputation: 0
+            });
+            addedCount++;
+          } else {
+            errorMessages.push(`Hàng ${index + 2}: ${errors.join(", ")}`);
+          }
+        });
+
+        if (addedCount > 0) {
+          alert(`Đã thêm ${addedCount} thành viên từ file Excel!`);
+          fileInput.value = '';
+          renderMemberList();
+        } else {
+          alert('Không có thành viên nào được thêm. Chi tiết lỗi:\n' + (errorMessages.length > 0 ? errorMessages.join("\n") : "Không tìm thấy dữ liệu hợp lệ."));
+        }
+      };
+      reader.onerror = function() {
+        alert('Lỗi khi đọc file Excel. Vui lòng kiểm tra định dạng file!');
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function filterMembers() {
+      const filterRole = document.getElementById('filterRole').value;
+      const filterSchool = document.getElementById('filterSchool').value;
+
+      const filteredMembers = members.filter(member => {
+        const roleMatch = filterRole === 'all' || member.role === filterRole;
+        const schoolMatch = filterSchool === 'all' || member.school === filterSchool;
+        return roleMatch && schoolMatch;
+      });
+
+      const noMatchMessage = document.getElementById('noMatchMessage');
+      if (filteredMembers.length === 0) {
+        noMatchMessage.style.display = 'block';
+        renderMemberList([]);
+      } else {
+        noMatchMessage.style.display = 'none';
+        renderMemberList(filteredMembers);
+      }
+    }
+
+    function renderMemberList(filteredMembers = members) {
+      const memberList = document.getElementById('memberList');
+      memberList.innerHTML = '';
+      filteredMembers.forEach((member, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${member.username}</td>
+          <td>${member.email}</td>
+          <td>${member.role}</td>
+          <td>${member.school}</td>
+          <td>
+            <button class="btn btn-success btn-sm" onclick="viewMemberDetail(${index})">Xem</button>
+            <button class="btn btn-warning btn-sm" onclick="editMember(${index})">Sửa</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteMember(${index})">Xóa</button>
+          </td>
+        `;
+        memberList.appendChild(row);
+      });
+    }
+
+    function viewMemberDetail(index) {
+      currentMemberIndex = index;
+      const member = members[index];
+      const memberDetailContent = document.getElementById('memberDetailContent');
+      const participatedEvents = events.filter(e => e.participants.some(p => p.user === member.username));
+      const organizedEvents = events.filter(e => e.author === member.username);
+      const postedItems = posts.filter(p => p.author === member.username);
+      const transactionsByUser = transactions.filter(t => t.user === member.username);
+
+      const timeFilter = document.getElementById('memberTimeFilter').value;
+      const topFilter = document.getElementById('memberTopFilter').value === 'all' ? Infinity : parseInt(document.getElementById('memberTopFilter').value);
+
+      let sortedParticipatedEvents = [...participatedEvents];
+      let sortedOrganizedEvents = [...organizedEvents];
+      let sortedPostedItems = [...postedItems];
+
+      if (timeFilter === 'newest') {
+        sortedParticipatedEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
+        sortedOrganizedEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
+        sortedPostedItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+        sortedTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+      } else {
+        sortedParticipatedEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+        sortedOrganizedEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+        sortedPostedItems.sort((a, b) => new Date(a.date) - new Date(b.date));
+        sortedTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+      }
+
+      sortedParticipatedEvents = sortedParticipatedEvents.slice(0, topFilter);
+      sortedOrganizedEvents = sortedOrganizedEvents.slice(0, topFilter);
+      sortedPostedItems = sortedPostedItems.slice(0, topFilter);
+      sortedTransactions = sortedTransactions.slice(0, topFilter);
+
+      memberDetailContent.innerHTML = `
+        <h3>Thông tin cá nhân</h3>
+        <p><strong>Tên người dùng:</strong> ${member.username}</p>
+        <p><strong>Email:</strong> ${member.email}</p>
+        <p><strong>Phân quyền:</strong> ${member.role}</p>
+        <p><strong>Trường học:</strong> ${member.school}</p>
+        <p><strong>Điểm cộng đồng:</strong> ${member.communityPoints}</p>
+        <p><strong>Điểm uy tín:</strong> ${member.reputation || 0}</p>
+
+        <h3>Sự kiện tham gia</h3>
+        <ul>${sortedParticipatedEvents.map(e => `<li>${e.title} <button onclick="viewEventDetailFromMember(${events.findIndex(ev => ev.id === e.id)})">Chi tiết</button></li>`).join('')}</ul>
+
+        <h3>Sự kiện tổ chức</h3>
+        <ul>${sortedOrganizedEvents.map(e => `<li>${e.title} <button onclick="viewEventDetailFromMember(${events.findIndex(ev => ev.id === e.id)})">Chi tiết</button></li>`).join('')}</ul>
+
+        <h3>Bài đăng</h3>
+        <ul>${sortedPostedItems.map(p => `<li>${p.title} <button onclick="viewPostDetailFromMember(${posts.findIndex(po => po.id === p.id)})">Chi tiết</button></li>`).join('')}</ul>
+
+        <h3>Sản phẩm đã mua/trao đổi</h3>
+        <ul>${sortedTransactions.map(t => `<li>${t.type === 'buy' ? 'Mua' : 'Trao đổi'} ${t.item} (${t.date})</li>`).join('')}</ul>
+      `;
+      updateMemberStats();
+      showContent('view-member-detail');
+    }
+
+    function viewPostDetailFromMember(index) {
+      currentPostIndex = index;
+      previousSection = 'view-member-detail';
+      const post = posts[index];
+      const postDetailContent = document.getElementById('postDetailContent');
+      const exchangeSection = document.getElementById('exchangeSection');
+      const sellSection = document.getElementById('sellSection');
+      const finalTradeInfo = document.getElementById('finalTradeInfo');
+
+      postDetailContent.innerHTML = `
+        <img src="https://via.placeholder.com/300x200?text=Chưa+có+ảnh" alt="Ảnh minh họa" class="image-placeholder">
+        <h3>${post.title}</h3>
+        <p><strong>Người đăng:</strong> ${post.author}</p>
+        <p><strong>Ngày đăng:</strong> ${post.date}</p>
+        <p><strong>Loại bài:</strong> ${post.type}</p>
+        <p><strong>Trạng thái:</strong> ${post.status}</p>
+        <p><strong>Trạng thái đóng:</strong> ${post.isClosed ? 'Đã đóng' : 'Chưa đóng'}</p>
+        <p><strong>Danh mục:</strong> ${post.category}</p>
+        <p><strong>Nội dung:</strong> ${post.content}</p>
+        <p><strong>Giá ban đầu:</strong> ${post.price ? post.price.toLocaleString('vi-VN') + ' VND' : 'Không có'}</p>
+        <p><strong>Tình trạng:</strong> ${post.condition}</p>
+      `;
+
+      if (post.type === 'Trao đổi') {
+        exchangeSection.style.display = 'block';
+        sellSection.style.display = 'none';
+        updateOfferStats();
+      } else {
+        exchangeSection.style.display = 'none';
+        sellSection.style.display = 'block';
+        finalTradeInfo.innerHTML = `
+          <p><strong>Giá cuối cùng:</strong> ${post.finalPrice ? post.finalPrice.toLocaleString('vi-VN') + ' VND' : 'Chưa có'}</p>
+          <p><strong>Người mua cuối cùng:</strong> ${post.finalBuyer || 'Chưa có'}</p>
+        `;
+      }
+      showContent('view-post-detail');
+    }
+
+    function viewEventDetailFromMember(index) {
+      currentEventIndex = index;
+      previousSection = 'view-member-detail';
+      const event = events[index];
+      const eventDetailContent = document.getElementById('eventDetailContent');
+      eventDetailContent.innerHTML = `
+        <img src="https://via.placeholder.com/300x200?text=Chưa+có+ảnh" alt="Ảnh minh họa" class="image-placeholder">
+        <h3>${event.title}</h3>
+        <p><strong>Người đăng:</strong> ${event.author}</p>
+        <p><strong>Ngày tổ chức:</strong> ${event.date}</p>
+        <p><strong>Loại sự kiện:</strong> ${event.type}</p>
+        <p><strong>Trạng thái:</strong> ${event.status}</p>
+        <p><strong>Trạng thái đóng:</strong> ${event.isClosed ? 'Đã đóng' : 'Chưa đóng'}</p>
+        <p><strong>Danh mục:</strong> ${event.category}</p>
+        <p><strong>Nội dung:</strong> ${event.content}</p>
+        <p><strong>Mục tiêu quỹ:</strong> ${event.targetAmount ? event.targetAmount.toLocaleString('vi-VN') + ' VND' : 'Không có'}</p>
+        <p><strong>Số tiền đã quyên:</strong> ${event.collectedAmount ? event.collectedAmount.toLocaleString('vi-VN') + ' VND' : '0 VND'}</p>
+      `;
+      updateParticipantStats();
+      renderParticipantTable();
+      showContent('view-event-detail');
+    }
+
+    
+
+    function editMember(index) {
+      currentMemberIndex = index;
+      const member = members[index];
+      originalMemberData = { ...member };
+
+      document.getElementById('editUsername').value = member.username;
+      document.getElementById('editEmail').value = member.email;
+      document.getElementById('editPassword').value = member.password;
+      document.getElementById('editRole').value = member.role;
+      document.getElementById('editSchool').value = member.school;
+
+      showContent('edit-member');
+    }
+
+    function saveMemberChanges() {
+      const newUsername = document.getElementById('editUsername').value;
+      const newEmail = document.getElementById('editEmail').value;
+      const newPassword = document.getElementById('editPassword').value;
+      const newRole = document.getElementById('editRole').value;
+      const newSchool = document.getElementById('editSchool').value;
+
+      const validRoles = ['Quản trị viên', 'Kiểm duyệt viên', 'Giáo viên', 'Học sinh', 'Hội nhóm'];
+      const validSchools = ['ĐH Bách Khoa Hà Nội', 'ĐH Quốc Gia Hà Nội', 'ĐH Sư Phạm Hà Nội', 'ĐH Kinh Tế Quốc Dân'];
+
+      if (
+        newUsername && newEmail && newPassword &&
+        validRoles.includes(newRole) &&
+        validSchools.includes(newSchool)
+      ) {
+        members[currentMemberIndex] = { 
+          username: newUsername, 
+          email: newEmail, 
+          password: newPassword, 
+          role: newRole, 
+          school: newSchool, 
+          communityPoints: members[currentMemberIndex].communityPoints, 
+          reputation: members[currentMemberIndex].reputation 
+        };
+        alert('Cập nhật thành viên thành công!');
+        showContent('view-members');
+      } else {
+        alert('Thông tin không hợp lệ!');
+      }
+    }
+
+    function checkUnsavedChanges() {
+      const newUsername = document.getElementById('editUsername').value;
+      const newEmail = document.getElementById('editEmail').value;
+      const newPassword = document.getElementById('editPassword').value;
+      const newRole = document.getElementById('editRole').value;
+      const newSchool = document.getElementById('editSchool').value;
+
+      if (newUsername !== originalMemberData.username || newEmail !== originalMemberData.email || 
+          newPassword !== originalMemberData.password || newRole !== originalMemberData.role || 
+          newSchool !== originalMemberData.school) {
+        if (confirm('Bạn chưa ấn lưu thông tin. Bạn có muốn tiếp tục?')) {
+          showContent('view-members');
+        }
+      } else {
+        showContent('view-members');
+      }
+    }
+
+    function deleteMember(index) {
+      if (confirm('Bạn có chắc muốn xóa thành viên này?')) {
+        members.splice(index, 1);
+        filterMembers();
+        alert('Xóa thành viên thành công!');
+      }
+    }
+
+    function filterPosts() {
+      const filterTime = document.getElementById('filterTime').value;
+      const filterStatus = document.getElementById('filterStatus').value;
+      const filterType = document.getElementById('filterType').value;
+      const filterSchool = document.getElementById('filterSchoolPost').value;
+      const filterClosed = document.getElementById('filterClosed').value;
+
+      filteredPosts = [...posts];
+
+      if (filterSchool !== 'all') {
+        filteredPosts = filteredPosts.filter(post => {
+          const authorMember = members.find(member => member.username === post.author);
+          return authorMember && authorMember.school === filterSchool;
+        });
+      }
+
+      if (filterStatus !== 'all') {
+        filteredPosts = filteredPosts.filter(post => post.status === filterStatus);
+      }
+
+      if (filterType !== 'all') {
+        filteredPosts = filteredPosts.filter(post => post.type === filterType);
+      }
+
+      if (filterClosed !== 'all') {
+        filteredPosts = filteredPosts.filter(post => 
+          filterClosed === 'open' ? !post.isClosed : post.isClosed
+        );
+      }
+
+      if (filterTime === 'newest') {
+        filteredPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
+      } else if (filterTime === 'oldest') {
+        filteredPosts.sort((a, b) => new Date(a.date) - new Date(b.date));
+      }
+
+      const noMatchMessagePost = document.getElementById('noMatchMessagePost');
+      if (filteredPosts.length === 0) {
+        noMatchMessagePost.style.display = 'block';
+        renderPostList([]);
+      } else {
+        noMatchMessagePost.style.display = 'none';
+        renderPostList(filteredPosts);
+      }
+    }
+
+    function renderPostList(filteredPostsToRender = filteredPosts) {
+      const postList = document.getElementById('postList');
+      postList.innerHTML = '';
+      filteredPostsToRender.forEach((post, index) => {
+        const postCard = document.createElement('div');
+        postCard.className = 'post-card';
+        postCard.innerHTML = `
+          <h5>${post.title}</h5>
+          <p><strong>Người đăng:</strong> ${post.author}</p>
+          <p><strong>Ngày đăng:</strong> ${post.date}</p>
+          <p><strong>Loại bài:</strong> ${post.type}</p>
+          <p><strong>Trạng thái:</strong> ${post.status}</p>
+          <p><strong>Trạng thái đóng:</strong> ${post.isClosed ? 'Đã đóng' : 'Chưa đóng'}</p>
+          <p><strong>Danh mục:</strong> ${post.category}</p>
+          <button class="btn btn-primary btn-sm" onclick="viewPostDetail(${index})">Xem chi tiết</button>
+        `;
+        postList.appendChild(postCard);
+      });
+    }
+
+    function viewPostDetail(index) {
+      currentPostIndex = index;
+      previousSection = 'quan-ly-don';
+      const post = filteredPosts[index];
+      const postDetailContent = document.getElementById('postDetailContent');
+      const exchangeSection = document.getElementById('exchangeSection');
+      const sellSection = document.getElementById('sellSection');
+      const finalTradeInfo = document.getElementById('finalTradeInfo');
+
+      postDetailContent.innerHTML = `
+        <img src="https://via.placeholder.com/300x200?text=Chưa+có+ảnh" alt="Ảnh minh họa" class="image-placeholder">
+        <h3>${post.title}</h3>
+        <p><strong>Người đăng:</strong> ${post.author}</p>
+        <p><strong>Ngày đăng:</strong> ${post.date}</p>
+        <p><strong>Loại bài:</strong> ${post.type}</p>
+        <p><strong>Trạng thái:</strong> ${post.status}</p>
+        <p><strong>Trạng thái đóng:</strong> ${post.isClosed ? 'Đã đóng' : 'Chưa đóng'}</p>
+        <p><strong>Danh mục:</strong> ${post.category}</p>
+        <p><strong>Nội dung:</strong> ${post.content}</p>
+        <p><strong>Giá ban đầu:</strong> ${post.price ? post.price.toLocaleString('vi-VN') + ' VND' : 'Không có'}</p>
+        <p><strong>Tình trạng:</strong> ${post.condition}</p>
+      `;
+
+      if (post.type === 'Trao đổi') {
+        exchangeSection.style.display = 'block';
+        sellSection.style.display = 'none';
+        updateOfferStats();
+      } else {
+        exchangeSection.style.display = 'none';
+        sellSection.style.display = 'block';
+        finalTradeInfo.innerHTML = `
+          <p><strong>Giá cuối cùng:</strong> ${post.finalPrice ? post.finalPrice.toLocaleString('vi-VN') + ' VND' : 'Chưa có'}</p>
+          <p><strong>Người mua cuối cùng:</strong> ${post.finalBuyer || 'Chưa có'}</p>
+        `;
+      }
+      showContent('view-post-detail');
+    }
+
+    function updateOfferStats() {
+      const timeFilter = document.getElementById('offerTimeFilter').value;
+      const priceFilter = document.getElementById('offerPriceFilter').value;
+      const communityFilter = document.getElementById('offerCommunityFilter').value;
+      const reputationFilter = document.getElementById('offerReputationFilter').value;
+      const post = filteredPosts[currentPostIndex];
+      let offers = post && post.offers ? [...post.offers] : [];
+
+      if (offers.length === 0) {
+        const offerTable = document.getElementById('offerTable').getElementsByTagName('tbody')[0];
+        offerTable.innerHTML = '<tr><td colspan="6">Chưa có offer nào.</td></tr>';
+        return;
+      }
+
+      if (timeFilter === 'newest') {
+        offers.sort((a, b) => new Date(b.date || '2025-05-01') - new Date(a.date || '2025-05-01'));
+      } else {
+        offers.sort((a, b) => new Date(a.date || '2025-05-01') - new Date(b.date || '2025-05-01'));
+      }
+
+      if (priceFilter === 'high') {
+        offers.sort((a, b) => (b.price || 0) - (a.price || 0));
+      } else if (priceFilter === 'low') {
+        offers.sort((a, b) => (a.price || 0) - (b.price || 0));
+      }
+
+      if (communityFilter === 'high') {
+        offers.sort((a, b) => (b.communityPoints || 0) - (a.communityPoints || 0));
+      } else if (communityFilter === 'low') {
+        offers.sort((a, b) => (a.communityPoints || 0) - (b.communityPoints || 0));
+      }
+
+      if (reputationFilter === 'high') {
+        offers.sort((a, b) => (b.reputation || 0) - (a.reputation || 0));
+      } else if (reputationFilter === 'low') {
+        offers.sort((a, b) => (a.reputation || 0) - (b.reputation || 0));
+      }
+
+      const offerTable = document.getElementById('offerTable').getElementsByTagName('tbody')[0];
+      offerTable.innerHTML = '';
+      offers.forEach((offer, idx) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${offer.user}</td>
+          <td>${offer.offer}</td>
+          <td>${offer.price ? offer.price.toLocaleString('vi-VN') + ' VND' : 'N/A'}</td>
+          <td>${offer.communityPoints || 0}</td>
+          <td>${offer.reputation || 0}</td>
+          <td><button class="btn btn-success btn-sm" onclick="viewOfferDetail(${idx})">Chi tiết</button></td>
+        `;
+        offerTable.appendChild(row);
+      });
+    }
+
+    function viewOfferDetail(index) {
+      const post = filteredPosts[currentPostIndex];
+      const offer = post.offers[index];
+      alert(`Chi tiết offer:\nNgười dùng: ${offer.user}\nOffer: ${offer.offer}\nGiá: ${offer.price || 'N/A'}\nĐiểm cộng đồng: ${offer.communityPoints || 0}\nĐiểm uy tín: ${offer.reputation || 0}`);
+    }
+
+    function closePost() {
+      if (confirm('Bạn có chắc muốn đóng bài đăng này?')) {
+        if (typeof currentPostIndex !== 'undefined' && filteredPosts[currentPostIndex]) {
+          const originalPost = posts.find(p => p.id === filteredPosts[currentPostIndex].id);
+          if (originalPost) {
+            originalPost.isClosed = true;
+            filteredPosts[currentPostIndex].isClosed = true;
+            alert('Đã đóng bài đăng thành công!');
+            filterPosts();
+            showContent('quan-ly-don');
+          }
+        }
+      }
+    }
+
+    function filterEvents() {
+      const filterTime = document.getElementById('filterTimeEvent').value;
+      const filterStatus = document.getElementById('filterStatusEvent').value;
+      const filterType = document.getElementById('filterTypeEvent').value;
+      const filterSchool = document.getElementById('filterSchoolEvent').value;
+      const filterClosed = document.getElementById('filterClosedEvent').value;
+
+      filteredEvents = [...events];
+
+      if (filterSchool !== 'all') {
+        filteredEvents = filteredEvents.filter(event => {
+          const authorMember = members.find(member => member.username === event.author);
+          return authorMember && authorMember.school === filterSchool;
+        });
+      }
+
+      if (filterStatus !== 'all') {
+        filteredEvents = filteredEvents.filter(event => event.status === filterStatus);
+      }
+
+      if (filterType !== 'all') {
+        filteredEvents = filteredEvents.filter(event => event.type === filterType);
+      }
+
+      if (filterClosed !== 'all') {
+        filteredEvents = filteredEvents.filter(event => 
+          filterClosed === 'open' ? !event.isClosed : event.isClosed
+        );
+      }
+
+      if (filterTime === 'newest') {
+        filteredEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
+      } else if (filterTime === 'oldest') {
+        filteredEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+      }
+
+      const noMatchMessageEvent = document.getElementById('noMatchMessageEvent');
+      if (filteredEvents.length === 0) {
+        noMatchMessageEvent.style.display = 'block';
+        renderEventList([]);
+      } else {
+        noMatchMessageEvent.style.display = 'none';
+        renderEventList(filteredEvents);
+      }
+    }
+
+    function renderEventList(filteredEventsToRender = filteredEvents) {
+      const eventList = document.getElementById('eventList');
+      eventList.innerHTML = '';
+      filteredEventsToRender.forEach((event, index) => {
+        const eventCard = document.createElement('div');
+        eventCard.className = 'post-card';
+        eventCard.innerHTML = `
+          <h5>${event.title}</h5>
+          <p><strong>Người đăng:</strong> ${event.author}</p>
+          <p><strong>Ngày tổ chức:</strong> ${event.date}</p>
+          <p><strong>Loại sự kiện:</strong> ${event.type}</p>
+          <p><strong>Trạng thái:</strong> ${event.status}</p>
+          <p><strong>Trạng thái đóng:</strong> ${event.isClosed ? 'Đã đóng' : 'Chưa đóng'}</p>
+          <p><strong>Danh mục:</strong> ${event.category}</p>
+          <button class="btn btn-primary btn-sm" onclick="viewEventDetail(${index})">Xem chi tiết</button>
+        `;
+        eventList.appendChild(eventCard);
+      });
+    }
+
+    function viewEventDetail(index) {
+      currentEventIndex = index;
+      previousSection = 'quan-ly-san-pham';
+      const event = filteredEvents[index];
+      const eventDetailContent = document.getElementById('eventDetailContent');
+      eventDetailContent.innerHTML = `
+        <img src="https://via.placeholder.com/300x200?text=Chưa+có+ảnh" alt="Ảnh minh họa" class="image-placeholder">
+        <h3>${event.title}</h3>
+        <p><strong>Người đăng:</strong> ${event.author}</p>
+        <p><strong>Ngày tổ chức:</strong> ${event.date}</p>
+        <p><strong>Loại sự kiện:</strong> ${event.type}</p>
+        <p><strong>Trạng thái:</strong> ${event.status}</p>
+        <p><strong>Trạng thái đóng:</strong> ${event.isClosed ? 'Đã đóng' : 'Chưa đóng'}</p>
+        <p><strong>Danh mục:</strong> ${event.category}</p>
+        <p><strong>Nội dung:</strong> ${event.content}</p>
+        <p><strong>Mục tiêu quỹ:</strong> ${event.targetAmount ? event.targetAmount.toLocaleString('vi-VN') + ' VND' : 'Không có'}</p>
+        <p><strong>Số tiền đã quyên:</strong> ${event.collectedAmount ? event.collectedAmount.toLocaleString('vi-VN') + ' VND' : '0 VND'}</p>
+      `;
+      updateParticipantStats();
+      renderParticipantTable();
+      showContent('view-event-detail');
+    }
+
+    function updateParticipantStats() {
+      if (participantStatsChart) {
+        participantStatsChart.destroy();
+      }
+      const timeFilter = document.getElementById('participantTimeFilter').value;
+      const event = filteredEvents[currentEventIndex];
+      const participants = event && event.participants ? [...event.participants] : [];
+
+      let labels = [];
+      let data = [];
+
+      if (participants.length === 0) {
+        labels = ['Không có dữ liệu'];
+        data = [0];
+      } else if (timeFilter === 'day') {
+        labels = participants.map(p => p.date);
+        data = participants.map(() => 1); // Đếm số người tham gia mỗi ngày
+      } else {
+        const monthlyCounts = {};
+        participants.forEach(p => {
+          const month = p.date.slice(0, 7);
+          monthlyCounts[month] = (monthlyCounts[month] || 0) + 1;
+        });
+        labels = Object.keys(monthlyCounts);
+        data = Object.values(monthlyCounts);
+      }
+
+      participantStatsChart = new Chart(document.getElementById('participantStatsChart'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Số người tham gia',
+            data: data,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: { scales: { y: { beginAtZero: true } } }
+      });
+    }
+
+    function renderParticipantTable() {
+      const timeSort = document.getElementById('participantTimeSort').value;
+      const schoolFilter = document.getElementById('participantSchoolFilter').value;
+      const topFilter = parseInt(document.getElementById('participantTopFilter').value);
+      const event = filteredEvents[currentEventIndex];
+      let participants = event && event.participants ? [...event.participants] : [];
+
+      if (schoolFilter !== 'all') {
+        participants = participants.filter(p => {
+          const user = members.find(m => m.username === p.user);
+          return user && user.school === schoolFilter;
+        });
+      }
+
+      if (timeSort === 'newest') {
+        participants.sort((a, b) => new Date(b.date) - new Date(a.date));
+      } else {
+        participants.sort((a, b) => new Date(a.date) - new Date(b.date));
+      }
+
+      participants = topFilter === 'all' ? participants : participants.slice(0, topFilter);
+
+      const participantTable = document.getElementById('participantTable').getElementsByTagName('tbody')[0];
+      participantTable.innerHTML = '';
+      participants.forEach((participant, idx) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${participant.user}</td>
+          <td>${participant.date}</td>
+          <td>${participant.contribution}</td>
+          <td><button class="btn btn-success btn-sm" onclick="viewParticipantDetail(${idx})">Chi tiết</button></td>
+        `;
+        participantTable.appendChild(row);
+      });
+    }
+
+    function viewParticipantDetail(index) {
+      const event = filteredEvents[currentEventIndex];
+      const participant = event.participants[index];
+      alert(`Chi tiết tham gia:\nNgười dùng: ${participant.user}\nTham gia: ${participant.date}\nĐóng góp: ${participant.contribution}\nChi tiết: ${participant.details || 'Không có'}`);
+    }
+
+    function closeEvent() {
+      if (confirm('Bạn có chắc muốn đóng sự kiện này?')) {
+        if (typeof currentEventIndex !== 'undefined' && filteredEvents[currentEventIndex]) {
+          const originalEvent = events.find(e => e.id === filteredEvents[currentEventIndex].id);
+          if (originalEvent) {
+            originalEvent.isClosed = true;
+            filteredEvents[currentEventIndex].isClosed = true;
+            alert('Đã đóng sự kiện thành công!');
+            filterEvents();
+            showContent('quan-ly-san-pham');
+          }
+        }
+      }
+    }
+
+    function addCategory() {
+      const categoryName = document.getElementById('categoryName').value;
+      const categoryType = document.getElementById('categoryType').value;
+
+      if (categoryName) {
+        const newId = categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1;
+        categories.push({ id: newId, name: categoryName, type: categoryType });
+        alert('Thêm danh mục thành công!');
+        document.getElementById('categoryName').value = '';
+        document.getElementById('categoryType').value = 'post';
+        filterCategories();
+      } else {
+        alert('Vui lòng điền tên danh mục!');
+      }
+    }
+
+    function filterCategories() {
+      renderCategoryList(categories);
+    }
+
+    function renderCategoryList(filteredCategories = categories) {
+      const categoryList = document.getElementById('categoryList');
+      categoryList.innerHTML = '';
+      filteredCategories.forEach((category, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${category.name}</td>
+          <td>${category.type === 'post' ? 'Bài đăng' : 'Sự kiện'}</td>
+          <td>
+            <button class="btn btn-success btn-sm" onclick="viewCategoryDetail(${index})">Xem</button>
+            <button class="btn btn-warning btn-sm" onclick="editCategory(${index})">Sửa</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCategory(${index})">Xóa</button>
+          </td>
+        `;
+        categoryList.appendChild(row);
+      });
+    }
+
+    function viewCategoryDetail(index) {
+      currentCategoryIndex = index;
+      previousSection = 'view-categories'; // Đảm bảo quay lại view-categories khi nhấn "Quay lại"
+      const category = categories[index];
+      const categoryDetailContent = document.getElementById('categoryDetailContent');
+      const categoryPostsSection = document.getElementById('categoryPostsSection');
+      const categoryEventsSection = document.getElementById('categoryEventsSection');
+
+      categoryDetailContent.innerHTML = `
+        <h3>Thông tin danh mục</h3>
+        <p><strong>Tên danh mục:</strong> ${category.name}</p>
+        <p><strong>Loại:</strong> ${category.type === 'post' ? 'Bài đăng' : 'Sự kiện'}</p>
+      `;
+
+      if (category.type === 'post') {
+        categoryPostsSection.style.display = 'block';
+        categoryEventsSection.style.display = 'none';
+        filterCategoryPosts();
+      } else {
+        categoryPostsSection.style.display = 'none';
+        categoryEventsSection.style.display = 'block';
+        filterCategoryEvents();
+      }
+      showContent('view-category-detail');
+    }
+
+    function filterCategoryPosts() {
+      const filterTime = document.getElementById('filterTimePostCat').value;
+      const filterStatus = document.getElementById('filterStatusPostCat').value;
+      const filterType = document.getElementById('filterTypePostCat').value;
+      const filterSchool = document.getElementById('filterSchoolPostCat').value;
+      const filterClosed = document.getElementById('filterClosedPostCat').value;
+      const category = categories[currentCategoryIndex];
+
+      filteredCategoryPosts = posts.filter(post => post.category === category.name);
+
+      if (filterSchool !== 'all') {
+        filteredCategoryPosts = filteredCategoryPosts.filter(post => {
+          const authorMember = members.find(member => member.username === post.author);
+          return authorMember && authorMember.school === filterSchool;
+        });
+      }
+
+      if (filterStatus !== 'all') {
+        filteredCategoryPosts = filteredCategoryPosts.filter(post => post.status === filterStatus);
+      }
+
+      if (filterType !== 'all') {
+        filteredCategoryPosts = filteredCategoryPosts.filter(post => post.type === filterType);
+      }
+
+      if (filterClosed !== 'all') {
+        filteredCategoryPosts = filteredCategoryPosts.filter(post => 
+          filterClosed === 'open' ? !post.isClosed : post.isClosed
+        );
+      }
+
+      if (filterTime === 'newest') {
+        filteredCategoryPosts.sort((a, b) => new Date(b.date) - new Date(a.date));
+      } else if (filterTime === 'oldest') {
+        filteredCategoryPosts.sort((a, b) => new Date(a.date) - new Date(b.date));
+      }
+
+      const noMatchMessagePostCat = document.getElementById('noMatchMessagePostCat');
+      if (filteredCategoryPosts.length === 0) {
+        noMatchMessagePostCat.style.display = 'block';
+        renderCategoryPostList([]);
+      } else {
+        noMatchMessagePostCat.style.display = 'none';
+        renderCategoryPostList(filteredCategoryPosts);
+      }
+    }
+
+    function renderCategoryPostList(filteredCategoryPostsToRender = filteredCategoryPosts) {
+      const categoryPostList = document.getElementById('categoryPostList');
+      categoryPostList.innerHTML = '';
+      filteredCategoryPostsToRender.forEach((post, index) => {
+        const globalIndex = posts.findIndex(p => p.id === post.id); // Tìm chỉ số trong mảng posts gốc
+        if (globalIndex === -1) return; // Bỏ qua nếu không tìm thấy
+        const postCard = document.createElement('div');
+        postCard.className = 'post-card';
+        postCard.innerHTML = `
+          <h5>${post.title}</h5>
+          <p><strong>Người đăng:</strong> ${post.author}</p>
+          <p><strong>Ngày đăng:</strong> ${post.date}</p>
+          <p><strong>Loại bài:</strong> ${post.type}</p>
+          <p><strong>Trạng thái:</strong> ${post.status}</p>
+          <p><strong>Trạng thái đóng:</strong> ${post.isClosed ? 'Đã đóng' : 'Chưa đóng'}</p>
+          <button class="btn btn-primary btn-sm" onclick="viewPostDetailFromCategory(${globalIndex})">Xem chi tiết</button>
+        `;
+        categoryPostList.appendChild(postCard);
+      });
+    }
+
+    function viewPostDetailFromCategory(index) {
+      currentPostIndex = index;
+      previousSection = 'view-category-detail';
+      const post = posts[index]; // Lấy từ mảng posts gốc
+      if (!post) {
+        alert('Không tìm thấy bài đăng!');
+        return;
+      }
+
+      const postDetailContent = document.getElementById('postDetailContent');
+      const exchangeSection = document.getElementById('exchangeSection');
+      const sellSection = document.getElementById('sellSection');
+      const finalTradeInfo = document.getElementById('finalTradeInfo');
+
+      postDetailContent.innerHTML = `
+        <img src="https://via.placeholder.com/300x200?text=Chưa+có+ảnh" alt="Ảnh minh họa" class="image-placeholder">
+        <h3>${post.title}</h3>
+        <p><strong>Người đăng:</strong> ${post.author}</p>
+        <p><strong>Ngày đăng:</strong> ${post.date}</p>
+        <p><strong>Loại bài:</strong> ${post.type}</p>
+        <p><strong>Trạng thái:</strong> ${post.status}</p>
+        <p><strong>Trạng thái đóng:</strong> ${post.isClosed ? 'Đã đóng' : 'Chưa đóng'}</p>
+        <p><strong>Danh mục:</strong> ${post.category}</p>
+        <p><strong>Nội dung:</strong> ${post.content}</p>
+        <p><strong>Giá ban đầu:</strong> ${post.price ? post.price.toLocaleString('vi-VN') + ' VND' : 'Không có'}</p>
+        <p><strong>Tình trạng:</strong> ${post.condition}</p>
+      `;
+
+      if (post.type === 'Trao đổi') {
+        exchangeSection.style.display = 'block';
+        sellSection.style.display = 'none';
+        updateOfferStats();
+      } else {
+        exchangeSection.style.display = 'none';
+        sellSection.style.display = 'block';
+        finalTradeInfo.innerHTML = `
+          <p><strong>Giá cuối cùng:</strong> ${post.finalPrice ? post.finalPrice.toLocaleString('vi-VN') + ' VND' : 'Chưa có'}</p>
+          <p><strong>Người mua cuối cùng:</strong> ${post.finalBuyer || 'Chưa có'}</p>
+        `;
+      }
+      showContent('view-post-detail');
+    }
+
+    function updateOfferStats() {
+      const timeFilter = document.getElementById('offerTimeFilter').value;
+      const priceFilter = document.getElementById('offerPriceFilter').value;
+      const communityFilter = document.getElementById('offerCommunityFilter').value;
+      const reputationFilter = document.getElementById('offerReputationFilter').value;
+      const post = posts[currentPostIndex];
+      let offers = post && post.offers ? [...post.offers] : [];
+
+      if (offers.length === 0) {
+        const offerTable = document.getElementById('offerTable').getElementsByTagName('tbody')[0];
+        offerTable.innerHTML = '<tr><td colspan="6">Chưa có offer nào.</td></tr>';
+        return;
+      }
+
+      if (timeFilter === 'newest') {
+        offers.sort((a, b) => new Date(b.date || '2025-05-01') - new Date(a.date || '2025-05-01'));
+      } else {
+        offers.sort((a, b) => new Date(a.date || '2025-05-01') - new Date(b.date || '2025-05-01'));
+      }
+
+      if (priceFilter === 'high') {
+        offers.sort((a, b) => (b.price || 0) - (a.price || 0));
+      } else if (priceFilter === 'low') {
+        offers.sort((a, b) => (a.price || 0) - (b.price || 0));
+      }
+
+      if (communityFilter === 'high') {
+        offers.sort((a, b) => (b.communityPoints || 0) - (a.communityPoints || 0));
+      } else if (communityFilter === 'low') {
+        offers.sort((a, b) => (a.communityPoints || 0) - (b.communityPoints || 0));
+      }
+
+      if (reputationFilter === 'high') {
+        offers.sort((a, b) => (b.reputation || 0) - (a.reputation || 0));
+      } else if (reputationFilter === 'low') {
+        offers.sort((a, b) => (a.reputation || 0) - (b.reputation || 0));
+      }
+
+      const offerTable = document.getElementById('offerTable').getElementsByTagName('tbody')[0];
+      offerTable.innerHTML = '';
+      offers.forEach((offer, idx) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${offer.user}</td>
+          <td>${offer.offer}</td>
+          <td>${offer.price ? offer.price.toLocaleString('vi-VN') + ' VND' : 'N/A'}</td>
+          <td>${offer.communityPoints || 0}</td>
+          <td>${offer.reputation || 0}</td>
+          <td><button class="btn btn-success btn-sm" onclick="viewOfferDetail(${idx})">Chi tiết</button></td>
+        `;
+        offerTable.appendChild(row);
+      });
+    }
+
+    function filterCategoryEvents() {
+      const filterTime = document.getElementById('filterTimeEventCat').value;
+      const filterStatus = document.getElementById('filterStatusEventCat').value;
+      const filterType = document.getElementById('filterTypeEventCat').value;
+      const filterSchool = document.getElementById('filterSchoolEventCat').value;
+      const filterClosed = document.getElementById('filterClosedEventCat').value;
+      const category = categories[currentCategoryIndex];
+
+      filteredCategoryEvents = events.filter(event => event.category === category.name);
+
+      if (filterSchool !== 'all') {
+        filteredCategoryEvents = filteredCategoryEvents.filter(event => {
+          const authorMember = members.find(member => member.username === event.author);
+          return authorMember && authorMember.school === filterSchool;
+        });
+      }
+
+      if (filterStatus !== 'all') {
+        filteredCategoryEvents = filteredCategoryEvents.filter(event => event.status === filterStatus);
+      }
+
+      if (filterType !== 'all') {
+        filteredCategoryEvents = filteredCategoryEvents.filter(event => event.type === filterType);
+      }
+
+      if (filterClosed !== 'all') {
+        filteredCategoryEvents = filteredCategoryEvents.filter(event => 
+          filterClosed === 'open' ? !event.isClosed : event.isClosed
+        );
+      }
+
+      if (filterTime === 'newest') {
+        filteredCategoryEvents.sort((a, b) => new Date(b.date) - new Date(a.date));
+      } else if (filterTime === 'oldest') {
+        filteredCategoryEvents.sort((a, b) => new Date(a.date) - new Date(b.date));
+      }
+
+      const noMatchMessageEventCat = document.getElementById('noMatchMessageEventCat');
+      if (filteredCategoryEvents.length === 0) {
+        noMatchMessageEventCat.style.display = 'block';
+        renderCategoryEventList([]);
+      } else {
+        noMatchMessageEventCat.style.display = 'none';
+        renderCategoryEventList(filteredCategoryEvents);
+      }
+    }
+
+    function renderCategoryEventList(filteredCategoryEventsToRender = filteredCategoryEvents) {
+      const categoryEventList = document.getElementById('categoryEventList');
+      categoryEventList.innerHTML = '';
+      filteredCategoryEventsToRender.forEach((event, index) => {
+        const globalIndex = events.findIndex(e => e.id === event.id); // Tìm chỉ số trong mảng events gốc
+        if (globalIndex === -1) return; // Bỏ qua nếu không tìm thấy
+        const eventCard = document.createElement('div');
+        eventCard.className = 'post-card';
+        eventCard.innerHTML = `
+          <h5>${event.title}</h5>
+          <p><strong>Người đăng:</strong> ${event.author}</p>
+          <p><strong>Ngày tổ chức:</strong> ${event.date}</p>
+          <p><strong>Loại sự kiện:</strong> ${event.type}</p>
+          <p><strong>Trạng thái:</strong> ${event.status}</p>
+          <p><strong>Trạng thái đóng:</strong> ${event.isClosed ? 'Đã đóng' : 'Chưa đóng'}</p>
+          <button class="btn btn-primary btn-sm" onclick="viewEventDetailFromCategory(${globalIndex})">Xem chi tiết</button>
+        `;
+        categoryEventList.appendChild(eventCard);
+      });
+    }
+
+    function viewEventDetailFromCategory(index) {
+      currentEventIndex = index;
+      previousSection = 'view-category-detail';
+      const event = events[index]; // Lấy từ mảng events gốc
+      if (!event) {
+        alert('Không tìm thấy sự kiện!');
+        return;
+      }
+
+      const eventDetailContent = document.getElementById('eventDetailContent');
+      eventDetailContent.innerHTML = `
+        <img src="https://via.placeholder.com/300x200?text=Chưa+có+ảnh" alt="Ảnh minh họa" class="image-placeholder">
+        <h3>${event.title}</h3>
+        <p><strong>Người đăng:</strong> ${event.author}</p>
+        <p><strong>Ngày tổ chức:</strong> ${event.date}</p>
+        <p><strong>Loại sự kiện:</strong> ${event.type}</p>
+        <p><strong>Trạng thái:</strong> ${event.status}</p>
+        <p><strong>Trạng thái đóng:</strong> ${event.isClosed ? 'Đã đóng' : 'Chưa đóng'}</p>
+        <p><strong>Danh mục:</strong> ${event.category}</p>
+        <p><strong>Nội dung:</strong> ${event.content}</p>
+        <p><strong>Mục tiêu quỹ:</strong> ${event.targetAmount ? event.targetAmount.toLocaleString('vi-VN') + ' VND' : 'Không có'}</p>
+        <p><strong>Số tiền đã quyên:</strong> ${event.collectedAmount ? event.collectedAmount.toLocaleString('vi-VN') + ' VND' : '0 VND'}</p>
+      `;
+      updateParticipantStats();
+      renderParticipantTable();
+      showContent('view-event-detail');
+    }
+
+    function editCategory(index) {
+      currentCategoryIndex = index;
+      const category = categories[index];
+      document.getElementById('categoryName').value = category.name;
+      document.getElementById('categoryType').value = category.type;
+      showContent('add-category');
+    }
+
+    function saveCategoryChanges() {
+      const categoryName = document.getElementById('categoryName').value;
+      const categoryType = document.getElementById('categoryType').value;
+
+      if (categoryName) {
+        categories[currentCategoryIndex] = { 
+          id: categories[currentCategoryIndex].id,
+          name: categoryName,
+          type: categoryType
+        };
+        alert('Cập nhật danh mục thành công!');
+        showContent('view-categories');
+      } else {
+        alert('Vui lòng điền tên danh mục!');
+      }
+    }
+
+    function deleteCategory(index) {
+      if (confirm('Bạn có chắc muốn xóa danh mục này?')) {
+        categories.splice(index, 1);
+        filterCategories();
+        alert('Xóa danh mục thành công!');
+      }
+    }
+  </script>
+</body>
+</html>

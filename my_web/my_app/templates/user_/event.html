@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Sự kiện{% endblock %}
+{% block active_event %}active{% endblock %}
+
+{% block content %}
+<h2>Sự kiện</h2>
+
+<div class="filters">
+    <label for="postType">Sự kiện:</label>
+    <select id="postType" onchange="filterEvents()">
+        <option value="all">Tất cả</option>
+        <option value="Quyên góp">Sự kiện quyên góp</option>
+        <option value="Gây quỹ">Sự kiện gây quỹ</option>
+    </select>
+</div>
+
+<div class="posts">
+    {% for event in events %}
+    <div class="post-card"
+         data-type="{{ event.type }}"
+         onclick="showEventDetail(this)"
+         data-title="{{ event.name }}"
+         data-img="{{ event.poster }}"
+         data-org="{{ event.id_group.name }}"
+         data-start="{{ event.start_time|date:'d/m/Y' }}"
+         data-end="{{ event.end_time|date:'d/m/Y' }}"
+         data-type-text="{{ event.type }}">
+        <img src="{{ event.poster }}" alt="Ảnh sự kiện" />
+        <h4>{{ event.name }}</h4>
+        <p>Tổ chức: {{ event.id_group.name }}</p>
+        <p>Loại sự kiện: {{ event.type }}</p>
+        <p>Ngày tổ chức: {{ event.start_time|date:'d/m/Y' }}</p>
+        <p>Ngày kết thúc: {{ event.end_time|date:'d/m/Y' }}</p>
+        <button class="btn-primary" onclick="joinEvent({{ event.id_event }})">Tham gia sự kiện</button>
+    </div>
+    {% empty %}
+    <p>Hiện chưa có sự kiện nào.</p>
+    {% endfor %}
+</div>
+
+<div class="detail-section" style="display:none;">
+    <h3 id="event-title"></h3>
+    <img id="event-image" src="" alt="Ảnh sự kiện" />
+    <p id="event-organizer"></p>
+    <p id="event-type"></p>
+    <p id="event-startDate"></p>
+    <p id="event-endDate"></p>
+    <button class="btn-back" onclick="goBack()">Quay lại</button>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    // Hiển thị chi tiết sự kiện
+    function showEventDetail(el) {
+        document.querySelector('.posts').style.display = 'none';
+        document.querySelector('.detail-section').style.display = 'block';
+
+        document.getElementById('event-title').innerText = el.dataset.title;
+        document.getElementById('event-image').src = el.dataset.img;
+        document.getElementById('event-organizer').innerText = "Tổ chức: " + el.dataset.org;
+        document.getElementById('event-type').innerText = "Loại sự kiện: " + el.dataset.typeText;
+        document.getElementById('event-startDate').innerText = "Ngày tổ chức: " + el.dataset.start;
+        document.getElementById('event-endDate').innerText = "Ngày kết thúc: " + el.dataset.end;
+    }
+
+    // Quay lại danh sách sự kiện
+    function goBack() {
+        document.querySelector('.posts').style.display = 'flex';
+        document.querySelector('.detail-section').style.display = 'none';
+    }
+
+    // Lọc sự kiện theo loại
+    function filterEvents() {
+        const selectedType = document.getElementById('postType').value;
+        const cards = document.querySelectorAll('.post-card');
+
+        cards.forEach(card => {
+            const type = card.dataset.type;
+            if (selectedType === "all" || type === selectedType) {
+                card.style.display = "block";
+            } else {
+                card.style.display = "none";
+            }
+        });
+    }
+
+    // Hàm tham gia sự kiện
+    function joinEvent(eventId) {
+        fetch(`/events_u/join/${eventId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({ event_id: eventId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Tham gia sự kiện thành công!");
+            } else {
+                alert("Bạn đã tham gia sự kiện này rồi!");
+            }
+        })
+        .catch(error => {
+            console.error("Lỗi khi tham gia sự kiện", error);
+        });
+    }
+
+    // Lấy CSRF token
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

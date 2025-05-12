@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Thông tin chi tiết hội nhóm{% endblock %}
+
+{% block content %}
+<h2>Thông tin chi tiết hội nhóm</h2>
+<div class="section">
+    <p><strong>Tên hội nhóm:</strong> {{ group.name }}</p>
+    <p><strong>Mô tả:</strong> {{ group.description }}</p>
+    <p><strong>Tài khoản ngân hàng:</strong> {{ group.account_bank }}</p>
+    <p><strong>Ngân hàng:</strong> {{ group.bank }}</p>
+    <p><strong>Điểm nhóm:</strong> {{ group.score_group }}</p>
+
+    {% if group.avt_group %}
+        <img src="{{ group.avt_group }}" alt="Ảnh đại diện nhóm" width="200" />
+    {% endif %}
+</div>
+
+<!-- Hiển thị danh sách admin -->
+<div class="section">
+    <h3>Danh sách admin</h3>
+    {% for admin in admins %}
+        <div class="post-card">
+            <p><strong>Tên:</strong> {{ admin.full_name }}</p>
+            <p><strong>Email:</strong> {{ admin.email }}</p>
+            <p><strong>Trường học:</strong> {{ admin.id_school.name }}</p>
+        </div>
+    {% empty %}
+        <p>Không có admin nào khác.</p>
+    {% endfor %}
+</div>
+
+<!-- Hiển thị danh sách sự kiện đã tổ chức -->
+<div class="section">
+    <h3>Danh sách sự kiện đã tổ chức</h3>
+    <div class="posts">
+        {% for event in events %}
+        <div class="post-card">
+            <img src="{{ event.poster }}" alt="Ảnh sự kiện" />
+            <h4>{{ event.name }}</h4>
+            <p>Tổ chức: {{ event.id_group.name }}</p>
+            <p>Loại sự kiện: {{ event.type }}</p>
+            <p>Ngày tổ chức: {{ event.start_time|date:'d/m/Y' }}</p>
+            <p>Ngày kết thúc: {{ event.end_time|date:'d/m/Y' }}</p>
+            <p>Nội dung: {{ event.description }}</p>
+        </div>
+        {% empty %}
+            <p>Chưa tổ chức sự kiện nào.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Nút "Rời khỏi nhóm" nếu người dùng đã tham gia -->
+
+    <form method="POST" action="{% url 'leave_group' group.id_group %}">
+        {% csrf_token %}
+        <button type="submit" class="btn-danger">Rời khỏi nhóm</button>
+    </form>
+
+{% endblock %}

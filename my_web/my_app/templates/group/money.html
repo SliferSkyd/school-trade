@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý Ví ảo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .sidebar {
+      width: 250px;
+      height: 100vh;
+      background-color: #2c3e50;
+      color: white;
+      position: fixed;
+      padding-top: 20px;
+    }
+    .sidebar .admin-info {
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+      background-color: #34495e;
+    }
+    .sidebar button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      text-align: left;
+      border: none;
+      background: none;
+      color: white;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .sidebar button:hover {
+      background-color: #34495e;
+    }
+    .content {
+      margin-left: 250px;
+      padding: 20px;
+    }
+    .btn {
+      padding: 5px 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .btn-primary { background-color: #3498db; color: white; }
+    .btn-warning { background-color: #f1c40f; color: white; }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="admin-info">Quản trị - group1</div>
+    
+    <button onclick="window.location.href='{% url 'profile' %}'">Thông tin cá nhân</button>
+    <button onclick="window.location.href='{% url 'add_mem' %}'">Quản lý thành viên</button>
+    <button onclick="window.location.href='{% url 'event_detail' %}'">Quản lý sự kiện</button>  
+    <button onclick="window.location.href='{% url 'money' %}'">Nạp/Rút tiền</button>
+    <button onclick="window.location.href='{% url 'noti' %}'">Thông báo</button>
+    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+  </div>
+  <div class="content">
+    <h2>Quản lý Ví ảo</h2>
+    <p>Số dư hiện tại: <span>1,000,000 VND</span></p>
+    <button class="btn btn-primary">Nạp tiền</button>
+    <button class="btn btn-warning">Rút tiền</button>
+  </div>
+</body>
+</html>

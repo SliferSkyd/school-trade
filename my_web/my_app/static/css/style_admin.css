@@ -1,0 +1,261 @@
+
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    background-color: #f8f9fa;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Roboto', sans-serif;
+}
+
+.sidebar {
+    width: 250px;
+    background: linear-gradient(135deg, #025626, #b3d527); /* Gradient xanh đậm sang hồng nhạt */
+    color: white;
+    height: 100vh;
+    padding: 20px 0;
+    position: fixed;
+    overflow-y: auto;
+}
+
+.sidebar h3 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.sidebar h4 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.sidebar a {
+    display: block;
+    color: white;
+    padding: 12px 20px;
+    text-decoration: none;
+    transition: background 0.3s, padding-left 0.3s;
+    cursor: pointer;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    background: linear-gradient(135deg, #117744, #73c824, #2c5364);
+    padding-left: 25px;
+}
+
+.submenu {
+    display: none;
+    padding-left: 20px;
+}
+
+.submenu a {
+    padding: 8px 20px;
+}
+
+.main-content {
+    margin-left: 260px;
+    padding: 10px;
+    flex-grow: 1;
+}
+
+
+.content-section {
+    display: none;
+    margin-bottom: 2rem;
+}
+
+.content-section.active {
+    display: block;
+}
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    max-width: 100%;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 1rem;
+    position: relative;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.filter-group {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 0.5rem;
+    text-align: left;
+}
+
+.no-match-message {
+    color: #dc3545;
+    text-align: center;
+    margin-top: 1rem;
+    display: none;
+}
+
+.post-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+}
+
+.post-card {
+    background-color: white;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.post-card h5 {
+    margin: 0 0 0.5rem 0;
+}
+
+.post-card p {
+    margin: 0.2rem 0;
+}
+
+.post-detail {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.post-detail p {
+    margin: 0.5rem 0;
+}
+
+.post-detail .image-placeholder {
+    max-width: 100%;
+    height: auto;
+    margin-bottom: 1rem;
+}
+
+.offer-table {
+    margin-top: 1rem;
+}
+
+.btn {
+    padding: 8px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    transition: all 0.2s ease-in-out;
+    color: white;
+}
+
+.btn-success {
+    background-color: #28a745;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+}
+
+.btn-primary {
+    background-color: #007bff;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+/* Điều chỉnh khoảng cách cho "Thông tin danh mục" */
+#categoryDetailContent {
+    margin-bottom: 2rem; /* Tăng khoảng cách dưới box này */
+}
+
+/* Điều chỉnh khoảng cách cho "Bài đăng thuộc danh mục" */
+#categoryPostsSection {
+    margin-top: 2rem; /* Tăng khoảng cách trên phần này */
+}
+
+/* Điều chỉnh khoảng cách cho button "Quay lại" */
+#view-category-detail .btn-primary {
+    margin-top: 2rem; /* Tăng khoảng cách trên button */
+}
+
+.chart-grid, table {
+    overflow-x: auto;
+}
+
+/* CSS để làm đẹp các thông báo */
+.alert-container {
+  margin-bottom: 20px;
+}
+
+.alert {
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.alert-error {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}

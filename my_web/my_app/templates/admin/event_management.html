@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Ban Quản Trị</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link href="{% static 'css/style_admin.css' %}" rel="stylesheet">
+
+  <script>
+    function toggleMenu(id) {
+      const submenu = document.getElementById(id);
+      submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function goTo(path) {
+      window.location.href = path;
+    }
+  </script>
+</head>
+
+<body>
+  <div class="sidebar">
+    <h3>Quản trị viên</h3>
+    <h4>Nguyễn Thị Hương</h4>
+
+    <a onclick="goTo('{% url 'admin_dashboard' %}')">Tổng quan</a>
+
+    <a onclick="toggleMenu('memberSubmenu')">Quản lý thành viên</a>
+    <div id="memberSubmenu" class="submenu">
+      <a onclick="goTo('{% url 'add-member' %}')">Thêm thành viên</a>
+      <a onclick="goTo('{% url 'view-members' %}')">Xem thành viên</a>
+    </div>
+
+    <a onclick="toggleMenu('categorySubmenu')">Quản lý danh mục</a>
+    <div id="categorySubmenu" class="submenu">
+      <a onclick="goTo('{% url 'add-category' %}')">Thêm danh mục</a>
+      <a onclick="goTo('{% url 'view-categories' %}')">Xem danh mục</a>
+    </div>
+
+    {% comment %} <a onclick="goTo('{% url 'post-management' %}')">Quản lý bài đăng</a>
+    <a onclick="goTo('{% url 'event-management' %}')">Quản lý sự kiện</a> {% endcomment %}
+    <a onclick="goTo('{% url 'statistics' %}')">Báo cáo thống kê</a>
+    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+  </div>
+
+  <div class="main-content">
+     <!-- Manage Events Section -->
+    <div id="quan-ly-san-pham">
+      <h1>Quản lý sự kiện</h1>
+      <div class="filter-group">
+        <div class="form-group">
+          <label for="filterTimeEvent">Thời gian tổ chức:</label>
+          <select id="filterTimeEvent" onchange="filterEvents()">
+            <option value="newest">Gần nhất</option>
+            <option value="oldest">Xa nhất</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterStatusEvent">Trạng thái:</label>
+          <select id="filterStatusEvent" onchange="filterEvents()">
+            <option value="all">Tất cả</option>
+            <option value="Đã duyệt">Đã duyệt</option>
+            <option value="Chưa duyệt">Chưa duyệt</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterTypeEvent">Loại sự kiện:</label>
+          <select id="filterTypeEvent" onchange="filterEvents()">
+            <option value="all">Tất cả</option>
+            <option value="Gây quỹ">Gây quỹ</option>
+            <option value="Quyên góp">Quyên góp</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterSchoolEvent">Trường học:</label>
+          <select id="filterSchoolEvent" onchange="filterEvents()">
+            <option value="all">Tất cả</option>
+            <option value="ĐH Bách Khoa Hà Nội">ĐH Bách Khoa Hà Nội</option>
+            <option value="ĐH Quốc Gia Hà Nội">ĐH Quốc Gia Hà Nội</option>
+            <option value="ĐH Sư Phạm Hà Nội">ĐH Sư Phạm Hà Nội</option>
+            <option value="ĐH Kinh Tế Quốc Dân">ĐH Kinh Tế Quốc Dân</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="filterClosedEvent">Trạng thái đóng:</label>
+          <select id="filterClosedEvent" onchange="filterEvents()">
+            <option value="all">Tất cả</option>
+            <option value="open">Chưa đóng</option>
+            <option value="closed">Đã đóng</option>
+          </select>
+        </div>
+      </div>
+      <div id="eventList" class="post-grid"></div>
+      <p id="noMatchMessageEvent" class="no-match-message">Không có sự kiện phù hợp</p>
+    </div>
+
+    <!-- View Event Detail Section -->
+    <div id="view-event-detail">
+      <h1>Chi tiết sự kiện</h1>
+      <div id="eventDetailContent" class="post-detail"></div>
+      <div class="filter-group">
+        <div class="form-group">
+          <label for="participantTimeFilter">Thời gian tham gia:</label>
+          <select id="participantTimeFilter" onchange="updateParticipantStats()">
+            <option value="day">Theo ngày</option>
+            <option value="month">Theo tháng</option>
+          </select>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-container">
+          <canvas id="participantStatsChart"></canvas>
+        </div>
+      </div>
+      <div class="filter-group">
+        <div class="form-group">
+          <label for="participantTimeSort">Sắp xếp thời gian:</label>
+          <select id="participantTimeSort" onchange="renderParticipantTable()">
+            <option value="newest">Gần nhất</option>
+            <option value="oldest">Xa nhất</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="participantSchoolFilter">Trường học:</label>
+          <select id="participantSchoolFilter" onchange="renderParticipantTable()">
+            <option value="all">Tất cả</option>
+            <option value="ĐH Bách Khoa Hà Nội">ĐH Bách Khoa Hà Nội</option>
+            <option value="ĐH Quốc Gia Hà Nội">ĐH Quốc Gia Hà Nội</option>
+            <option value="ĐH Sư Phạm Hà Nội">ĐH Sư Phạm Hà Nội</option>
+            <option value="ĐH Kinh Tế Quốc Dân">ĐH Kinh Tế Quốc Dân</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="participantTopFilter">Top:</label>
+          <select id="participantTopFilter" onchange="renderParticipantTable()">
+            <option value="5">Top 5</option>
+            <option value="10">Top 10</option>
+            <option value="all">Tất cả</option>
+          </select>
+        </div>
+      </div>
+      <table id="participantTable" class="offer-table">
+        <thead>
+          <tr>
+            <th>Tên người dùng</th>
+            <th>Tham gia</th>
+            <th>Số tiền/Đóng góp</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button class="btn btn-primary" onclick="returnToPreviousSection()">Quay lại</button>
+      <button class="btn btn-danger" onclick="closeEvent()">Đóng sự kiện</button>
+    </div>
+
+  </div>
+</body>
+</html>

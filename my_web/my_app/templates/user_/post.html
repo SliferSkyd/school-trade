@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Bài đăng{% endblock %}
+
+{% block content %}
+<h2>Bài đăng</h2>
+
+<div class="filters">
+    <label for="category">Danh mục:</label>
+    <select id="category">
+        <option value="all">Tất cả</option>
+        {% for category in categories %}
+            <option value="{{ category.name }}">{{ category.name }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="postType">Loại bài đăng:</label>
+    <select id="postType">
+        <option value="all">Tất cả</option>
+        <option value="thanh lý">Bài đăng thanh lý</option>
+        <option value="trao đổi">Bài đăng trao đổi</option>
+    </select>
+</div>
+
+<div class="posts">
+    {% for post in posts %}
+    <div class="post-card"
+         data-type="{{ post.type_post }}"
+         data-category="{{ post.id_category.name }}">
+        <img src="{{ post.product_image }}" alt="Ảnh bài đăng" />
+        <h4>{{ post.title }}</h4>
+        <p>Người đăng: {{ post.id_user.full_name }}</p>
+        <p>Loại bài: {{ post.type_post|title }}</p>
+        {% if post.price %}
+        <p>Giá: {{ post.price|floatformat:0 }} VND</p>
+        {% endif %}
+        <button class="btn-primary" data-type="post" data-id="{{ post.id_post }}">Xem chi tiết</button>
+    </div>
+    {% empty %}
+        <p>Không có bài đăng nào.</p>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    // Lọc bài đăng theo danh mục và loại
+    document.getElementById('category').addEventListener('change', filterPosts);
+    document.getElementById('postType').addEventListener('change', filterPosts);
+
+    function filterPosts() {
+        const selectedCategory = document.getElementById('category').value;
+        const selectedType = document.getElementById('postType').value;
+        const cards = document.querySelectorAll('.post-card');
+
+        cards.forEach(card => {
+            const type = card.dataset.type;
+            const category = card.dataset.category;
+
+            const matchType = (selectedType === "all" || type === selectedType);
+            const matchCat = (selectedCategory === "all" || category === selectedCategory);
+
+            card.style.display = matchType && matchCat ? "block" : "none";
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Ban Quản Trị</title>
+
+  <!-- Thư viện CSS và JS từ CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link href="{% static 'css/style_admin.css' %}" rel="stylesheet">
+
+  <script>
+    function toggleMenu(id) {
+      const submenu = document.getElementById(id);
+      submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function goTo(path) {
+      window.location.href = path;
+    }
+
+    function filterCategoryEvents(event) {
+      event.preventDefault();
+      const categoryType = document.getElementById('filterTypeEventCat').value;
+      if (categoryType) {
+        window.location.href = "{% url 'view-categories' %}?category_type=" + encodeURIComponent(categoryType);
+      }
+    }
+
+    function editCategory(categoryId) {
+      const row = document.getElementById(`category-${categoryId}`);
+      const name = row.querySelector('td:nth-child(1)').innerText;
+      const type = row.querySelector('td:nth-child(2)').innerText;
+
+      document.getElementById('categoryId').value = categoryId;
+      document.getElementById('categoryName').value = name;
+      document.getElementById('categoryType').value = type;
+
+      const modal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
+      modal.show();
+    }
+
+    function saveCategoryChanges() {
+      const categoryId = document.getElementById('categoryId').value;
+      const name = document.getElementById('categoryName').value;
+      const type = document.getElementById('categoryType').value;
+
+      const data = {
+        name: name,
+        type: type
+      };
+
+      fetch(`/api/categories/${categoryId}/`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => {
+        if (response.ok) {
+          alert('Cập nhật danh mục thành công!');
+          location.reload();
+        } else {
+          alert('Cập nhật thất bại!');
+        }
+      })
+      .catch(error => console.error('Lỗi khi cập nhật:', error));
+    }
+  </script>
+</head>
+
+<body>
+  <div class="sidebar">
+    <h3>Quản trị viên</h3>
+    <h4>Nguyễn Thị Hương</h4>
+
+    <a onclick="goTo('{% url 'admin_dashboard' %}')">Tổng quan</a>
+
+    <a onclick="toggleMenu('memberSubmenu')">Quản lý thành viên</a>
+    <div id="memberSubmenu" class="submenu">
+      <a onclick="goTo('{% url 'add-member' %}')">Thêm thành viên</a>
+      <a onclick="goTo('{% url 'view-members' %}')">Xem thành viên</a>
+    </div>
+
+    <a onclick="toggleMenu('categorySubmenu')">Quản lý danh mục</a>
+    <div id="categorySubmenu" class="submenu" style="display: block;">
+      <a onclick="goTo('{% url 'add-category' %}')">Thêm danh mục</a>
+      <a onclick="goTo('{% url 'view-categories' %}')">Xem danh mục</a>
+    </div>
+{% comment %} 
+    <a onclick="goTo('{% url 'post-management' %}')">Quản lý bài đăng</a>
+    <a onclick="goTo('{% url 'event-management' %}')">Quản lý sự kiện</a> {% endcomment %}
+    <a onclick="goTo('{% url 'statistics' %}')">Báo cáo thống kê</a>
+    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+  </div>
+
+  <div class="main-content">
+    <div class="form-group mt-3">
+      <label for="filterTypeEventCat">Loại danh mục:</label>
+      <select id="filterTypeEventCat" onchange="filterCategoryEvents(event)" class="form-control">
+        <option value="Tất cả">Tất cả</option>
+        <option value="Quần áo">Quần áo</option>
+        <option value="Phụ kiện">Phụ kiện</option>
+        <option value="Sách vở">Sách vở</option>
+        <option value="Đồ dùng học tập">Đồ dùng học tập</option>
+        <option value="Đồ điện tử">Đồ điện tử</option>
+        <option value="Sản phẩm khác">Sản phẩm khác</option>
+        <option value="Sản phẩm bị cấm">Sản phẩm bị cấm</option>
+      </select>
+    </div>
+
+    <div id="view-categories">
+      <h1>Danh sách danh mục</h1>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Tên danh mục</th>
+            <th>Loại</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in categories %}
+          <tr id="category-{{ category.id_category }}">
+            <td>{{ category.name }}</td>
+            <td>{{ category.type }}</td>
+            <td>
+              <button class="btn btn-warning btn-sm" onclick="editCategory({{ category.id_category }})">Sửa</button>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="3">Không có danh mục nào.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p id="noMatchMessageCategory" class="no-match-message">Không có danh mục phù hợp</p>
+    </div>
+  </div>
+
+  <!-- Modal sửa danh mục -->
+  <div class="modal" id="editCategoryModal" tabindex="-1" aria-labelledby="editCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editCategoryModalLabel">Sửa danh mục</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="categoryId">
+          <div class="form-group mb-2">
+            <label for="categoryName">Tên danh mục:</label>
+            <input type="text" id="categoryName" class="form-control" required>
+          </div>
+          <div class="form-group mb-2">
+            <label for="categoryType">Loại:</label>
+            <select id="categoryType" class="form-control">
+              <option value="Quần áo">Quần áo</option>
+              <option value="Phụ kiện">Phụ kiện</option>
+              <option value="Sách vở">Sách vở</option>
+              <option value="Đồ dùng học tập">Đồ dùng học tập</option>
+              <option value="Đồ điện tử">Đồ điện tử</option>
+              <option value="Sản phẩm khác">Sản phẩm khác</option>
+              <option value="Sản phẩm bị cấm">Sản phẩm bị cấm</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button onclick="saveCategoryChanges()" class="btn btn-primary">Lưu thay đổi</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

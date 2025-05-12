@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Ban Quản Trị</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <link href="{% static 'css/style_admin.css' %}" rel="stylesheet">
+
+  <script>
+    function toggleMenu(id) {
+      const submenu = document.getElementById(id);
+      submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function goTo(path) {
+      window.location.href = path;
+    }
+  </script>
+</head>
+
+<body>
+  <div class="sidebar">
+    <h3>Quản trị viên</h3>
+    <h4>Nguyễn Thị Hương</h4>
+
+    <a onclick="goTo('{% url 'admin_dashboard' %}')">Tổng quan</a>
+
+    <a onclick="toggleMenu('memberSubmenu')">Quản lý thành viên</a>
+    <div id="memberSubmenu" class="submenu">
+      <a onclick="goTo('{% url 'add-member' %}')">Thêm thành viên</a>
+      <a onclick="goTo('{% url 'view-members' %}')">Xem thành viên</a>
+    </div>
+
+    <a onclick="toggleMenu('categorySubmenu')">Quản lý danh mục</a>
+    <div id="categorySubmenu" class="submenu" style="display: block;">
+        <a onclick="goTo('{% url 'add-category' %}')">Thêm danh mục</a>
+        <a onclick="goTo('{% url 'view-categories' %}')">Xem danh mục</a>
+    </div>
+
+
+    {% comment %} <a onclick="goTo('{% url 'post-management' %}')">Quản lý bài đăng</a>
+    <a onclick="goTo('{% url 'event-management' %}')">Quản lý sự kiện</a> {% endcomment %}
+    <a onclick="goTo('{% url 'statistics' %}')">Báo cáo thống kê</a>
+    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+  </div>
+
+  <div class="main-content">
+    <!-- Add Category Section -->
+    <!-- Add Category Section -->
+<div id="add-category">
+  <h1>Thêm danh mục</h1>
+
+  <!-- Hiển thị thông báo thành công hoặc thất bại -->
+  {% if messages %}
+    <div class="alert-container">
+      {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="POST" action="{% url 'add-category' %}">
+    {% csrf_token %}
+    <div class="form-group">
+      <label for="categoryName">Tên danh mục:</label>
+      <input type="text" id="categoryName" name="categoryName" placeholder="Nhập tên danh mục">
+    </div>
+    <div class="form-group">
+      <label for="categoryDescription">Mô tả ngắn:</label>
+      <input type="text" id="categoryDescription" name="categoryDescription" placeholder="Nhập mô tả ngắn">
+    </div>
+    <div class="form-group">
+      <label for="categoryList">Loại danh mục:</label>
+      <select id="categoryList" name="categoryList">
+        <option value="clothes">Quần áo</option>
+        <option value="accessories">Phụ kiện</option>
+        <option value="books">Sách vở</option>
+        <option value="school-supplies">Đồ dùng học tập</option>
+        <option value="electronics">Đồ điện tử</option>
+        <option value="other-products">Sản phẩm khác</option>
+        <option value="banned-products">Sản phẩm bị cấm</option>
+      </select>
+    </div>
+    <button type="submit" class="btn btn-success">Thêm</button>
+  </form>
+</div>
+
+  </div>
+</body>
+
+
+</html>

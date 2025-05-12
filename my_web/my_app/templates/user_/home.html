@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Post{% endblock %}
+{% block content %}
+
+
+<h2>Bài đăng</h2>
+
+<h2>Trang chủ</h2>
+        <div class="filters">
+            <label for="category">Danh mục:</label>
+            <select id="category">
+                <option>Quần áo</option>
+                <option>Phụ kiện</option>
+                <option>Sách vở</option>
+                <option>Đồ dùng học tập</option>
+                <option>Đồ điện tử</option>
+                <option>Sản phẩm khác</option>
+            </select>
+            <label for="postType">Bài đăng:</label>
+            <select id="postType">
+                <option>Bài đăng thanh lý</option>
+                <option>Bài đăng trao đổi</option>
+            </select>
+            <label for="postType">Sự kiện:</label>
+            <select id="postType">
+                <option>Sự kiện quyên góp</option>
+                <option>Sự kiện gây quỹ</option>
+            </select>
+        </div>
+        <div class="posts">
+            <div class="post-card">
+                <img src="https://i.pinimg.com/736x/c3/de/c5/c3dec50c8063a844e0d960463ee620b9.jpg" alt="Ảnh bài đăng" />
+                <h4>Áo khoác mùa đông</h4>
+                <p>Người đăng: Nguyễn Thị Ánh Tuyết</p>
+                <p>Loại bài: Thanh lý</p>
+                <p>Giá: 200.000 VND</p>
+                <button class="btn-primary" data-type="post" data-id="1">Xem chi tiết</button>
+            </div>
+            <div class="post-card">
+                <img src="https://i.pinimg.com/736x/c1/15/67/c1156779b5e6b747967911c23f71f006.jpg" alt="Ảnh bài đăng" />
+                <h4>Máy tính Casio</h4>
+                <p>Người đăng: Lương Gia Khánh</p>
+                <p>Loại bài: Trao đổi</p>
+                <button class="btn-primary" data-type="post" data-id="2">Xem chi tiết</button>
+            </div>
+            <div class="post-card">
+                <img src="https://i.pinimg.com/736x/38/ff/3e/38ff3e465355367422ba9f0566c69f32.jpg" alt="Ảnh bài đăng" />
+                <h4>Sự kiện quyên góp cho trẻ em vùng lũ lụt</h4>
+                <p>Tổ chức: SGUET</p>
+                <p>Loại sự kiện: Quyên góp</p>
+                <p>Ngày tổ chức: 12/5/2025</p>
+                <p>Ngày kết thúc: 12/6/2025</p>
+                <button class="btn-primary" data-type="event" data-id="1">Xem chi tiết</button>
+            </div>
+            <div class="post-card">
+                <img src="https://i.pinimg.com/736x/70/57/1d/70571dca26c4d94854860857e6fe5fb6.jpg" alt="Ảnh bài đăng" />
+                <h4>Sự kiện gây quỹ tưởng niệm các anh hùng liệt sĩ</h4>
+                <p>Tổ chức: SGUET</p>
+                <p>Loại sự kiện: Gây quỹ</p>
+                <p>Ngày tổ chức: 12/5/2025</p>
+                <p>Ngày kết thúc: 12/6/2025</p>
+                <button class="btn-primary" data-type="event" data-id="2">Xem chi tiết</button>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
+
+{% block script %}
+<script>
+    
+    // Hàm mở modal ảnh sản phẩm
+    function openImageModal(imageUrl) {
+        document.getElementById('modal-image').src = imageUrl;
+    }
+</script>
+{% endblock %}

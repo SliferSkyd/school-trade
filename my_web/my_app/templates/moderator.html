@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Ban Kiểm Duyệt</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      background-color: #f8f9fa;
+    }
+
+    .sidebar {
+      width: 250px;
+      background-color: #2c3e50;
+      color: white;
+      height: 100vh;
+      padding: 20px 0;
+      position: fixed;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .sidebar a {
+      display: block;
+      color: white;
+      padding: 12px 20px;
+      text-decoration: none;
+      transition: background 0.3s;
+      cursor: pointer;
+    }
+
+    .sidebar a:hover,
+    .sidebar a.active {
+      background-color: #34495e;
+    }
+
+    .submenu {
+      display: none;
+      padding-left: 20px;
+    }
+
+    .submenu a {
+      padding: 8px 20px;
+    }
+
+    .main-content {
+      margin-left: 280px;
+      padding: 10px;
+      flex-grow: 1;
+    }
+
+    .content-section {
+      display: none;
+    }
+
+    .content-section.active {
+      display: block;
+    }
+
+    
+
+    .product-card {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background-color: white;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      height: 100%;
+    }
+
+    .product-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .moderate-form .btn {
+      padding: 8px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      transition: all 0.2s ease-in-out;
+    }
+
+    .btn-success {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .btn-danger {
+      background-color: #dc3545;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background-color: #218838;
+    }
+
+    .btn-danger:hover {
+      background-color: #c82333;
+    }
+
+    .d-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    h1, h4, h5, h6 {
+      margin-top: 0;
+    }
+  </style>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap JS and Popper.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<div class="sidebar">
+  <h3>Kiểm duyệt viên</h3>
+  <h4>{{ user.full_name }}</h4>
+  <a href="{% url 'dashboard' %}">Dashboard</a>
+
+  <a href="#">Post</a>
+  <div class="submenu">
+    <a href="#">Chưa duyệt</a>
+    <div class="submenu">
+      <a href="{% url 'post_thanh_ly' %}">Thanh lý</a>
+      <a href="{% url 'post_trao_doi' %}">Trao đổi</a>
+    </div>
+    <a href="{% url 'post_da_duyet' %}">Đã duyệt</a>
+    <a href="{% url 'post_tu_choi' %}">Đã từ chối</a>
+  </div>
+
+  <a href="#">Event</a>
+  <div class="submenu">
+    <a href="#">Chưa duyệt</a>
+    <div class="submenu">
+      <a href="{% url 'event_gay_quy' %}">Gây quỹ</a>
+      <a href="{% url 'event_quyen_gop' %}">Quyên góp</a>
+    </div>
+    <a href="{% url 'event_da_duyet' %}">Đã duyệt</a>
+    <a href="{% url 'event_tu_choi' %}">Đã từ chối</a>
+  </div>
+
+  <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+</div>
+
+  <div class="main-content">
+
+
+    
+    <div id="dashboard" class="content-section active">
+        <h4>Sự kiện cần kiểm duyệt ({{ unverified_events|length }})</h4>
+        <div class="row row-cols-1 row-cols-sm-2 ">
+        {% for event in unverified_events %}
+        <div class="col">
+
+
+            <div class="product-card">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ event.poster }}')">
+                <img src="{% static 'images/' %}{{ event.poster }}" alt="Ảnh sự kiện">
+            </a>
+            <div>
+                <h5>{{ event.name }}</h5>
+                <p><strong>Nhóm tổ chức:</strong> {{ event.id_group.name }}</p>
+                <p><strong>Ngày bắt đầu:</strong> {{ event.start_time|date:"d/m/Y H:i" }}</p>
+                <p><strong>Ngày kết thúc:</strong> {{ event.end_time|date:"d/m/Y H:i" }}</p>
+                <p><strong>Loại sự kiện:</strong> {{ event.type }}</p>
+                <p><strong>Địa điểm:</strong> {{ event.location }}</p>
+                <p><strong>Mô tả:</strong> {{ event.description }}</p>
+                <p><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark">Chưa duyệt</span></p>
+            </div>
+
+            <form method="POST" action="{% url 'moderate_event' %}" class="moderate-form mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="id_event" value="{{ event.id_event }}">
+                <input type="hidden" name="status" value="">
+                <input type="hidden" name="rejection_reason" value="">
+                <div class="d-grid">
+                <button type="button" class="btn btn-success btn-sm" onclick="openConfirmModal(this.form, '{{ event.name }}', 'Đã duyệt')">Duyệt</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="openConfirmModal(this.form, '{{ event.name }}', 'Từ chối')">Từ chối</button>
+                </div>
+            </form>
+        </div>
+        </div>
+        {% empty %}
+        <p>Không có sự kiện nào cần kiểm duyệt.</p>
+        {% endfor %}
+
+        </div>
+
+        <h4>Bài đăng cần kiểm duyệt ({{ unverified_posts|length }})</h4>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mt-3">
+        {% for post in unverified_posts %}
+        <div class="col">
+          <div class="product-card">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ post.product_image }}')">
+              <img src="{% static 'images/' %}{{ post.product_image }}" alt="Ảnh sản phẩm">
+            </a>
+            <div>
+              <h5>{{ post.title }}</h5>
+              <p><strong>Người đăng:</strong> {{ post.id_user.full_name }}</p>
+              <p><strong>Ngày đăng:</strong> {{ post.date_created|date:"d/m/Y H:i" }}</p>
+              <p><strong>Danh mục:</strong> {{ post.id_category.name }}</p>
+              <p><strong>Tên sản phẩm:</strong> {{ post.product_name }}</p>
+              <p><strong>Tình trạng sử dụng:</strong> {{ post.product_used_period }}</p>
+              <p><strong>Giá:</strong> {{ post.price|floatformat:0 }} VND</p>
+              <p><strong>Loại bài:</strong> {{ post.type_post }}</p>
+              <p><strong>Nội dung:</strong> {{ post.content }}</p>
+              <p><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark">Chưa duyệt</span></p>
+            </div>
+
+            <form method="POST" action="{% url 'moderate_post' %}" class="moderate-form mt-2">
+              {% csrf_token %}
+              <input type="hidden" name="id_post" value="{{ post.id_post }}">
+              <input type="hidden" name="status" value="">
+              <input type="hidden" name="rejection_reason" value="">
+              <div class="d-grid">
+                <button type="button" class="btn btn-success btn-sm" onclick="openConfirmModal(this.form, '{{ post.title }}', 'Đã duyệt')">Duyệt</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="openConfirmModal(this.form, '{{ post.title }}', 'Từ chối')">Từ chối</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        {% empty %}
+        <p>Không có bài nào cần kiểm duyệt.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+
+
+
+
+    
+    <div id="post-thanh-ly" class="content-section">
+        <h1>Danh sách {{ post_thanh_ly|length }} bài đăng thanh lý chờ duyệt</h1>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mt-3">
+        {% for post in post_thanh_ly %}
+        <div class="col">
+          <div class="product-card">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ post.product_image }}')">
+              <img src="{% static 'images/' %}{{ post.product_image }}" alt="Ảnh sản phẩm">
+            </a>
+            <div>
+              <h5>{{ post.title }}</h5>
+              <p><strong>Người đăng:</strong> {{ post.id_user.full_name }}</p>
+              <p><strong>Ngày đăng:</strong> {{ post.date_created|date:"d/m/Y H:i" }}</p>
+              <p><strong>Danh mục:</strong> {{ post.id_category.name }}</p>
+              <p><strong>Tên sản phẩm:</strong> {{ post.product_name }}</p>
+              <p><strong>Tình trạng sử dụng:</strong> {{ post.product_used_period }}</p>
+              <p><strong>Giá:</strong> {{ post.price|floatformat:0 }} VND</p>
+              <p><strong>Loại bài:</strong> {{ post.type_post }}</p>
+              <p><strong>Nội dung:</strong> {{ post.content }}</p>
+              <p><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark">Chưa duyệt</span></p>
+            </div>
+
+            <form method="POST" action="{% url 'moderate_post' %}" class="moderate-form mt-2">
+              {% csrf_token %}
+              <input type="hidden" name="id_post" value="{{ post.id_post }}">
+              <input type="hidden" name="status" value="">
+              <input type="hidden" name="rejection_reason" value="">
+              <div class="d-grid">
+                <button type="button" class="btn btn-success btn-sm" onclick="openConfirmModal(this.form, '{{ post.title }}', 'Đã duyệt')">Duyệt</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="openConfirmModal(this.form, '{{ post.title }}', 'Từ chối')">Từ chối</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        {% empty %}
+        <p>Không có bài nào cần kiểm duyệt.</p>
+        {% endfor %}
+    </div>
+    </div>
+
+
+
+
+
+
+    <div id="post-trao-doi" class="content-section">
+        <h1>Danh sách {{ post_trao_doi|length }} bài đăng trao đổi chờ duyệt</h1>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mt-3">
+        {% for post in post_trao_doi %}
+        <div class="col">
+          <div class="product-card">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ post.product_image }}')">
+              <img src="{% static 'images/' %}{{ post.product_image }}" alt="Ảnh sản phẩm">
+            </a>
+            <div>
+              <h5>{{ post.title }}</h5>
+              <p><strong>Người đăng:</strong> {{ post.id_user.full_name }}</p>
+              <p><strong>Ngày đăng:</strong> {{ post.date_created|date:"d/m/Y H:i" }}</p>
+              <p><strong>Danh mục:</strong> {{ post.id_category.name }}</p>
+              <p><strong>Tên sản phẩm:</strong> {{ post.product_name }}</p>
+              <p><strong>Tình trạng sử dụng:</strong> {{ post.product_used_period }}</p>
+              <p><strong>Giá:</strong> {{ post.price|floatformat:0 }} VND</p>
+              <p><strong>Loại bài:</strong> {{ post.type_post }}</p>
+              <p><strong>Nội dung:</strong> {{ post.content }}</p>
+              <p><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark">Chưa duyệt</span></p>
+            </div>
+
+            <form method="POST" action="{% url 'moderate_post' %}" class="moderate-form mt-2">
+              {% csrf_token %}
+              <input type="hidden" name="id_post" value="{{ post.id_post }}">
+              <input type="hidden" name="status" value="">
+              <input type="hidden" name="rejection_reason" value="">
+              <div class="d-grid">
+                <button type="button" class="btn btn-success btn-sm" onclick="openConfirmModal(this.form, '{{ post.title }}', 'Đã duyệt')">Duyệt</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="openConfirmModal(this.form, '{{ post.title }}', 'Từ chối')">Từ chối</button>
+              </div>
+            </form>
+          </div>
+        </div>
+        {% empty %}
+        <p>Không có bài nào cần kiểm duyệt.</p>
+        {% endfor %}
+    </div>
+    </div>
+
+
+
+
+
+
+    <div id="post-da-duyet" class="content-section">
+        <h1>Danh sách {{ approved_posts|length }} bài đăng đã duyệt</h1>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mt-3">
+        {% for post in approved_posts %}
+        <div class="col">
+          <div class="product-card">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ post.product_image }}')">
+              <img src="{% static 'images/' %}{{ post.product_image }}" alt="Ảnh sản phẩm">
+            </a>
+            <div>
+              <h5>{{ post.title }}</h5>
+              <p><strong>Người đăng:</strong> {{ post.id_user.full_name }}</p>
+              <p><strong>Ngày đăng:</strong> {{ post.date_created|date:"d/m/Y H:i" }}</p>
+              <p><strong>Danh mục:</strong> {{ post.id_category.name }}</p>
+              <p><strong>Tên sản phẩm:</strong> {{ post.product_name }}</p>
+              <p><strong>Tình trạng sử dụng:</strong> {{ post.product_used_period }}</p>
+              <p><strong>Giá:</strong> {{ post.price|floatformat:0 }} VND</p>
+              <p><strong>Loại bài:</strong> {{ post.type_post }}</p>
+              <p><strong>Nội dung:</strong> {{ post.content }}</p>
+              <p><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark">Đã duyệt</span></p>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <p>Không có bài nào đã duyệt.</p>
+        {% endfor %}
+    </div>
+    </div>
+
+
+
+
+    <div id="post-tu-choi" class="content-section">
+        <h1>Danh sách {{ rejected_posts|length }} bài đăng đã từ chối</h1>
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mt-3">
+        {% for post in rejected_posts %}
+        <div class="col">
+          <div class="product-card">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ post.product_image }}')">
+              <img src="{% static 'images/' %}{{ post.product_image }}" alt="Ảnh sản phẩm">
+            </a>
+            <div>
+              <h5>{{ post.title }}</h5>
+              <p><strong>Người đăng:</strong> {{ post.id_user.full_name }}</p>
+              <p><strong>Ngày đăng:</strong> {{ post.date_created|date:"d/m/Y H:i" }}</p>
+              <p><strong>Danh mục:</strong> {{ post.id_category.name }}</p>
+              <p><strong>Tên sản phẩm:</strong> {{ post.product_name }}</p>
+              <p><strong>Tình trạng sử dụng:</strong> {{ post.product_used_period }}</p>
+              <p><strong>Giá:</strong> {{ post.price|floatformat:0 }} VND</p>
+              <p><strong>Loại bài:</strong> {{ post.type_post }}</p>
+              <p><strong>Nội dung:</strong> {{ post.content }}</p>
+              
+              <p><strong>Lý do từ chối:</strong> {{ post.rejection_reason }}</p>
+              <p><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark">Từ chối</span></p>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <p>Không có bài nào đã từ chối.</p>
+        {% endfor %}
+    </div>
+    </div>
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <div id="event-gay-quy" class="content-section">
+        <h1>({{ event_gay_quy|length }}) Sự kiện gây quỹ cần kiểm duyệt</h1>
+   
+        <div class="row row-cols-1 row-cols-sm-2 ">
+        {% for event in event_gay_quy %}
+        <div class="col">
+
+
+            <div class="product-card">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ event.poster }}')">
+                <img src="{% static 'images/' %}{{ event.poster }}" alt="Ảnh sự kiện">
+            </a>
+            <div>
+                <h5>{{ event.name }}</h5>
+                <p><strong>Nhóm tổ chức:</strong> {{ event.id_group.name }}</p>
+                <p><strong>Ngày bắt đầu:</strong> {{ event.start_time|date:"d/m/Y H:i" }}</p>
+                <p><strong>Ngày kết thúc:</strong> {{ event.end_time|date:"d/m/Y H:i" }}</p>
+                <p><strong>Loại sự kiện:</strong> {{ event.type }}</p>
+                <p><strong>Địa điểm:</strong> {{ event.location }}</p>
+                <p><strong>Mô tả:</strong> {{ event.description }}</p>
+                <p><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark">Chưa duyệt</span></p>
+            </div>
+
+            <form method="POST" action="{% url 'moderate_event' %}" class="moderate-form mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="id_event" value="{{ event.id_event }}">
+                <input type="hidden" name="status" value="">
+                <input type="hidden" name="rejection_reason" value="">
+                <div class="d-grid">
+                <button type="button" class="btn btn-success btn-sm" onclick="openConfirmModal(this.form, '{{ event.name }}', 'Đã duyệt')">Duyệt</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="openConfirmModal(this.form, '{{ event.name }}', 'Từ chối')">Từ chối</button>
+                </div>
+            </form>
+        </div>
+        </div>
+        {% empty %}
+        <p>Không có sự kiện nào cần kiểm duyệt.</p>
+        {% endfor %}
+
+        </div>
+    </div>
+    
+    
+    
+    
+    
+    <div id="event-quyen-gop" class="content-section">
+        <h1>({{ event_quyen_gop|length }}) Sự kiện quyên góp cần kiểm duyệt</h1>
+   
+        <div class="row row-cols-1 row-cols-sm-2 ">
+        {% for event in event_quyen_gop%}
+        <div class="col">
+
+
+            <div class="product-card">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ event.poster }}')">
+                <img src="{% static 'images/' %}{{ event.poster }}" alt="Ảnh sự kiện">
+            </a>
+            <div>
+                <h5>{{ event.name }}</h5>
+                <p><strong>Nhóm tổ chức:</strong> {{ event.id_group.name }}</p>
+                <p><strong>Ngày bắt đầu:</strong> {{ event.start_time|date:"d/m/Y H:i" }}</p>
+                <p><strong>Ngày kết thúc:</strong> {{ event.end_time|date:"d/m/Y H:i" }}</p>
+                <p><strong>Loại sự kiện:</strong> {{ event.type }}</p>
+                <p><strong>Địa điểm:</strong> {{ event.location }}</p>
+                <p><strong>Mô tả:</strong> {{ event.description }}</p>
+                <p><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark">Chưa duyệt</span></p>
+            </div>
+
+            <form method="POST" action="{% url 'moderate_event' %}" class="moderate-form mt-2">
+                {% csrf_token %}
+                <input type="hidden" name="id_event" value="{{ event.id_event }}">
+                <input type="hidden" name="status" value="">
+                <input type="hidden" name="rejection_reason" value="">
+                <div class="d-grid">
+                <button type="button" class="btn btn-success btn-sm" onclick="openConfirmModal(this.form, '{{ event.name }}', 'Đã duyệt')">Duyệt</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="openConfirmModal(this.form, '{{ event.name }}', 'Từ chối')">Từ chối</button>
+                </div>
+            </form>
+        </div>
+        </div>
+        {% empty %}
+        <p>Không có sự kiện nào cần kiểm duyệt.</p>
+        {% endfor %}
+
+        </div>
+    
+    
+    </div>
+
+    
+    
+    
+    
+    
+    
+    
+    <div id="event-da-duyet" class="content-section">
+        <h1>Event - Đã duyệt</h1>
+        <p>Danh sách sự kiện đã được duyệt</p>
+        <h1>({{ approved_events|length }}) sự kiện đã được duyệt</h1>
+   
+        <div class="row row-cols-1 row-cols-sm-2 ">
+        {% for event in approved_events%}
+        <div class="col">
+
+
+            <div class="product-card">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ event.poster }}')">
+                <img src="{% static 'images/' %}{{ event.poster }}" alt="Ảnh sự kiện">
+            </a>
+            <div>
+                <h5>{{ event.name }}</h5>
+                <p><strong>Nhóm tổ chức:</strong> {{ event.id_group.name }}</p>
+                <p><strong>Ngày bắt đầu:</strong> {{ event.start_time|date:"d/m/Y H:i" }}</p>
+                <p><strong>Ngày kết thúc:</strong> {{ event.end_time|date:"d/m/Y H:i" }}</p>
+                <p><strong>Loại sự kiện:</strong> {{ event.type }}</p>
+                <p><strong>Địa điểm:</strong> {{ event.location }}</p>
+                <p><strong>Mô tả:</strong> {{ event.description }}</p>
+                <p><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark">Đã duyệt</span></p>
+            </div>
+
+        </div>
+        </div>
+        {% empty %}
+        <p>Không có sự kiện nào đã được duyệt.</p>
+        {% endfor %}
+
+        </div>
+    </div>
+
+
+
+
+
+    <div id="event-tu-choi" class="content-section">
+        <h1>({{ rejected_events|length }}) sự kiện đã bị từ chối</h1>
+   
+        <div class="row row-cols-1 row-cols-sm-2 ">
+        {% for event in rejected_events%}
+        <div class="col">
+
+
+            <div class="product-card">
+            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ event.poster }}')">
+                <img src="{% static 'images/' %}{{ event.poster }}" alt="Ảnh sự kiện">
+            </a>
+            <div>
+                <h5>{{ event.name }}</h5>
+                <p><strong>Nhóm tổ chức:</strong> {{ event.id_group.name }}</p>
+                <p><strong>Ngày bắt đầu:</strong> {{ event.start_time|date:"d/m/Y H:i" }}</p>
+                <p><strong>Ngày kết thúc:</strong> {{ event.end_time|date:"d/m/Y H:i" }}</p>
+                <p><strong>Loại sự kiện:</strong> {{ event.type }}</p>
+                <p><strong>Địa điểm:</strong> {{ event.location }}</p>
+                <p><strong>Mô tả:</strong> {{ event.description }}</p>
+                <p><strong>Lý do từ chối:</strong> {{ event.rejection_reason }}</p>
+                <p><strong>Trạng thái:</strong> <span class="badge bg-warning text-dark">Từ chối</span></p>
+            </div>
+        </div>
+        </div>
+        {% empty %}
+        <p>Không có sự kiện nào đã bị từ chối</p>
+        {% endfor %}
+
+        </div>
+    </div>
+
+
+
+
+
+  </div>
+
+
+
+
+
+
+
+  <!-- Modal for image preview -->
+  <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="imageModalLabel">Xem ảnh</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <img id="modalImage" src="" alt="Image" class="img-fluid">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleMenu(id) {
+      const menu = document.getElementById(id);
+      menu.style.display = (menu.style.display === "block") ? "none" : "block";
+    }
+
+    function showContent(sectionId) {
+      document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      const activeSection = document.getElementById(sectionId);
+      if (activeSection) {
+        activeSection.classList.add('active');
+      }
+    }
+
+    function openImageModal(imageSrc) {
+        document.getElementById("modalImage").src = imageSrc;
+      }
+    
+    function openConfirmModal(form, postTitle, action) {
+        let rejectionReason = "";
+        if (action === "Từ chối") {
+          rejectionReason = prompt("Vui lòng nhập lý do từ chối:");
+          form.rejection_reason.value = rejectionReason;
+        }
+        if (confirm(`Bạn có chắc chắn muốn ${action} bài đăng "${postTitle}"?`)) {
+          form.status.value = action === "Đã duyệt" ? "Đã duyệt" : "Từ chối";
+          form.submit();
+        }
+      }
+  </script>
+
+</body>
+</html>

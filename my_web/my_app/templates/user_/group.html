@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Danh sách hội nhóm{% endblock %}
+
+{% block content %}
+<h2>Danh sách hội nhóm</h2>
+
+<!-- Hiển thị các nhóm -->
+<div class="posts">
+    {% for group in groups %}
+    <div class="post-card">
+        <h4>{{ group.name }}</h4>
+        <p><strong>Mô tả:</strong> {{ group.description }}</p>
+        <p><strong>Tài khoản ngân hàng:</strong> {{ group.account_bank }}</p>
+        <p><strong>Ngân hàng:</strong> {{ group.bank }}</p>
+        <p><strong>Điểm nhóm:</strong> {{ group.score_group }}</p>
+
+        <!-- Hiển thị ảnh đại diện nếu có -->
+        {% if group.avt_group %}
+            <img src="{{ group.avt_group }}" alt="Ảnh đại diện nhóm" width="200" />
+        {% endif %}
+
+        <form method="POST" action="{% url 'leave_group' group.id_group %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary">Rời khỏi nhóm</button>
+        </form>
+        <form method="POST" action="{% url 'join_group' group.id_group %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary">Tham gia nhóm</button>
+        </form>
+
+        <!-- Nút xem chi tiết nhóm -->
+        <a href="{% url 'group_detail' group.id_group %}">Xem chi tiết</a>
+    </div>
+    {% empty %}
+        <p>Không có nhóm nào trong hệ thống.</p>
+    {% endfor %}
+</div>
+
+{% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <p class="alert alert-info">{{ message }}</p>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

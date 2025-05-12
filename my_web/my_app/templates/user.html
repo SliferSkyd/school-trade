@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>User Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      display: flex;
+      min-height: 100vh;
+      background-color: #f8f9fa;
+    }
+    .sidebar {
+      width: 250px;
+      background-color: #2c3e50;
+      color: white;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      padding: 20px 0;
+      overflow-y: auto;
+    }
+    .sidebar h3, .sidebar h4 {
+      text-align: center;
+    }
+    .sidebar a {
+      display: block;
+      color: white;
+      padding: 12px 20px;
+      text-decoration: none;
+      transition: background 0.3s;
+    }
+    .sidebar a:hover {
+      background-color: #34495e;
+    }
+    .main-content {
+      margin-left: 250px;
+      padding: 20px;
+      flex-grow: 1;
+    }
+    .product-card {
+      width: 100%;
+      height: 650px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background-color: white;
+      padding: 15px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    }
+    .product-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h3>User</h3>
+    <h4>{{ user.full_name }}</h4>
+    <a href="#" onclick="showContent('dashboard')">Dashboard</a>
+    <a href="#" onclick="showContent('profile')">Profile</a>
+    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+  </div>
+
+  <div class="main-content">
+    <div id="dashboard" class="content-section active">
+      <!-- Tabs -->
+      <div class="mb-4">
+        <button class="btn btn-outline-primary me-2" onclick="switchDashboardTab('events')">Sự kiện</button>
+        <button class="btn btn-outline-primary" onclick="switchDashboardTab('posts')">Bài đăng</button>
+      </div>
+
+      <!-- Sự kiện -->
+      <div id="events-section">
+        <h4>Sự kiện mới nhất ({{ approved_events|length }})</h4>
+        <div class="row">
+          {% for event in approved_events %}
+          <div class="col-md-4">
+            <div class="product-card">
+              <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ event.poster }}')">
+                <img src="{% static 'images/' %}{{ event.poster }}" alt="Ảnh sự kiện">
+              </a>
+              <h5>{{ event.name }}</h5>
+              <p><strong>Nhóm tổ chức:</strong> {{ event.id_group.name }}</p>
+              <p><strong>Ngày bắt đầu:</strong> {{ event.start_time|date:"d/m/Y H:i" }}</p>
+              <p><strong>Ngày kết thúc:</strong> {{ event.end_time|date:"d/m/Y H:i" }}</p>
+              <p><strong>Loại sự kiện:</strong> {{ event.type }}</p>
+              <p><strong>Địa điểm:</strong> {{ event.location }}</p>
+              <p><strong>Mô tả:</strong> {{ event.description }}</p>
+              <form method="POST" action="{% url 'user_event' %}">
+                {% csrf_token %}
+                <input type="hidden" name="id_event" value="{{ event.id_event }}">
+                <div class="d-grid">
+                  <button type="button" class="btn btn-warning btn-sm" onclick="openConfirmModal('{{ event.name }}', 'sự kiện', 'báo cáo')">Báo cáo</button>
+                  <button type="button" class="btn btn-primary btn-sm" onclick="openConfirmModal('{{ event.name }}', 'sự kiện', 'tham gia')">Tham gia</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <p>Không có sự kiện nào cần kiểm duyệt.</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Bài đăng -->
+      <div id="posts-section" style="display: none;">
+        <h4>Bài đăng mới nhất ({{ approved_posts|length }})</h4>
+        <div class="row">
+          {% for post in approved_posts %}
+          <div class="col-md-4">
+            <div class="product-card">
+              <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ post.product_image }}')">
+                <img src="{% static 'images/' %}{{ post.product_image }}" alt="Ảnh bài đăng">
+              </a>
+              <h5>{{ post.title }}</h5>
+              <p><strong>Người đăng:</strong> {{ post.id_user.full_name }}</p>
+              <p><strong>Ngày đăng:</strong> {{ post.date_created|date:"d/m/Y H:i" }}</p>
+              <p><strong>Danh mục:</strong> {{ post.id_category.name }}</p>
+              <p><strong>Tên sản phẩm:</strong> {{ post.product_name }}</p>
+              <p><strong>Tình trạng:</strong> {{ post.product_used_period }}</p>
+              <p><strong>Giá:</strong> {{ post.price|floatformat:0 }} VND</p>
+              <p><strong>Loại bài:</strong> {{ post.type_post }}</p>
+              <form method="POST" action="{% url 'user_post' %}">
+                {% csrf_token %}
+                <input type="hidden" name="id_post" value="{{ post.id_post }}">
+                <div class="d-grid">
+                  <button type="button" class="btn btn-warning btn-sm" onclick="openConfirmModal('{{ post.title }}', 'bài đăng', 'báo cáo')">Báo cáo</button>
+                  <button type="button" class="btn btn-primary btn-sm" onclick="openConfirmModal('{{ post.title }}', 'sản phẩm', 'mua')">Mua</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <p>Không có bài đăng nào.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
+  <script>
+    function showContent(sectionId) {
+      document.querySelectorAll('.content-section').forEach(section => {
+        section.classList.remove('active');
+      });
+      document.getElementById(sectionId).classList.add('active');
+    }
+
+    function openImageModal(imageSrc) {
+      document.getElementById("modalImage").src = imageSrc;
+    }
+
+    function openConfirmModal(name, type, action) {
+      if (confirm(`Bạn có chắc chắn muốn ${action} ${type} "${name}"?`)) {
+        // Xử lý hành động xác nhận tại đây
+      }
+    }
+
+    function switchDashboardTab(tab) {
+      const eventsSection = document.getElementById("events-section");
+      const postsSection = document.getElementById("posts-section");
+
+      if (tab === 'events') {
+        eventsSection.style.display = 'block';
+        postsSection.style.display = 'none';
+      } else {
+        eventsSection.style.display = 'none';
+        postsSection.style.display = 'block';
+      }
+    }
+  </script>
+
+</body>
+</html>
