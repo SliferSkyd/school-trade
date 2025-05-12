@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Quản lý Đơn Hàng{% endblock %}
+
+{% block content %}
+<h2 class="page-title">Quản lý Đơn Hàng</h2>
+
+<div class="orders">
+    {% for offer in trading_offers %}
+    <div class="order-card" data-id="{{ offer.id_trading_offer }}" data-post-id="{{ offer.id_post.id }}">
+        <h4>{{ offer.product_name }}</h4>
+        <p>Người mua: {{ offer.id_user.full_name }}</p>
+        <p>Trạng thái: {{ offer.status }}</p>
+
+        <button class="btn btn-success approve-button" data-id="{{ offer.id_trading_offer }}" data-post-id="{{ offer.id_post.id }}">Phê duyệt</button>
+        <button class="btn btn-danger reject-button" data-id="{{ offer.id_trading_offer }}" data-post-id="{{ offer.id_post.id }}">Từ chối</button>
+    </div>
+    {% empty %}
+        <p>Không có đơn hàng nào.</p>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    // Approve or reject an order
+    document.querySelectorAll('.approve-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const offerId = this.dataset.id;
+            const postId = this.dataset.postId;
+
+            // Send request to approve the offer
+            fetch(`/orders_u/approve_order/${offerId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ action: 'approve', post_id: postId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the order from the list
+                    document.querySelector(`.order-card[data-id="${offerId}"]`).style.display = 'none';
+                } else {
+                    alert("Có lỗi xảy ra khi phê duyệt đơn hàng!");
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+
+    document.querySelectorAll('.reject-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const offerId = this.dataset.id;
+            const postId = this.dataset.postId;
+
+            // Send request to reject the offer
+            fetch(`/orders_u/approve_order/${offerId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ action: 'reject', post_id: postId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the order from the list
+                    document.querySelector(`.order-card[data-id="${offerId}"]`).style.display = 'none';
+                } else {
+                    alert("Có lỗi xảy ra khi từ chối đơn hàng!");
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    });
+
+    // Function to retrieve CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

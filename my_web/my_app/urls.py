@@ -12,7 +12,7 @@ urlpatterns = [
     path('moderate_event/', moderate_event, name='moderate_event'),
     path('user_event/', user_event, name='user_event'),
     path('user_post/', user_post, name='user_post'),
-
+    path('events_u/participate/', participate_event, name='participate_event'),
 
 
     path('admin/dashboard/', admin_dashboard, name='admin_dashboard'),
@@ -52,9 +52,11 @@ urlpatterns = [
     path('posts/', post_management, name='post-management'),
     path('events/', event_management, name='event-management'),
     path('statistics/', statistics, name='statistics'),
+    path('orders/', orders, name='order'),
+    path('orders_u/approve_order/<int:offer_id>/', approve_order, name='approve_order'),  # Handle approval/rejection
 
-
-
+    path('posts_u/buy_post/', buy_post, name='buy_post'),
+    path('posts_u/add/', add_post, name='add_post'),
     path('posts_u/', post_list, name='post_list'),
     path('events_u/', event_list, name='event_list'),
     path('groups_u/', group_list, name='group_list'),
@@ -63,5 +65,8 @@ urlpatterns = [
     path('groups_u/leave/<int:group_id>/', leave_group_view, name='leave_group'),
     path('groups_u/detail/<int:group_id>/', group_detail_view, name='group_detail'),
     path('events_u/join/<int:event_id>/', join_event_view, name='join_event'),  # Thêm path tham gia sự kiện
+
+
+    path('events_u/approve_participant/<int:participate_form_id>/<str:action>/', approve_participant, name='approve_participant'),
 
 ]

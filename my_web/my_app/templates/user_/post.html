@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block title %}Bài đăng{% endblock %}
 
 {% block content %}
@@ -24,18 +25,24 @@
 
 <div class="posts">
     {% for post in posts %}
-    <div class="post-card"
-         data-type="{{ post.type_post }}"
-         data-category="{{ post.id_category.name }}">
-        <img src="{{ post.product_image }}" alt="Ảnh bài đăng" />
-        <h4>{{ post.title }}</h4>
-        <p>Người đăng: {{ post.id_user.full_name }}</p>
-        <p>Loại bài: {{ post.type_post|title }}</p>
-        {% if post.price %}
-        <p>Giá: {{ post.price|floatformat:0 }} VND</p>
-        {% endif %}
-        <button class="btn-primary" data-type="post" data-id="{{ post.id_post }}">Xem chi tiết</button>
-    </div>
+        <div class="post-card"
+             data-type="{{ post.type_post }}"
+             data-category="{{ post.id_category.name }}"
+             data-id="{{ post.id_post }}"
+             data-user="{{ post.id_user.id }}">
+            <img src="{{ post.product_image }}" alt="Ảnh bài đăng" />
+            <h4>{{ post.title }}</h4>
+            <p>Người đăng: {{ post.id_user.full_name }}</p>
+            <p>Loại bài: {{ post.type_post|title }}</p>
+            {% if post.price %}
+                <p>Giá: {{ post.price|floatformat:0 }} VND</p>
+            {% endif %}
+
+            <!-- Show "Mua" button only for posts that do not belong to the current user -->
+            {% if post.id_user.id != request.user.id %}
+                <button class="btn-primary buy-button" data-id="{{ post.id_post }}">Mua</button>
+            {% endif %}
+        </div>
     {% empty %}
         <p>Không có bài đăng nào.</p>
     {% endfor %}
@@ -62,6 +69,59 @@
 
             card.style.display = matchType && matchCat ? "block" : "none";
         });
+    }
+
+    // Handle "Mua" button click
+    document.querySelectorAll('.buy-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.id;
+            const userId = {{ request.user.id }};
+            const postCard = this.closest('.post-card');
+            
+            // Hide the post after purchase
+            postCard.style.display = "none";
+
+            // Send the request to create a TradingOffer instance
+            fetch(`/posts_u/buy_post/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')  // Include CSRF token
+                },
+                body: JSON.stringify({
+                    post_id: postId,
+                    buyer_id: userId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Đã tạo đơn hàng thành công!");
+                } else {
+                    alert("Có lỗi xảy ra. Vui lòng thử lại.");
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Có lỗi xảy ra. Vui lòng thử lại.");
+            });
+        });
+    });
+
+    // Function to retrieve CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 </script>
 {% endblock %}

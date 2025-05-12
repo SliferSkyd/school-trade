@@ -33,6 +33,46 @@
           topParticipants.forEach(p => p.element.style.display = "table-row");
       }
 
+      function handleApproval(participateFormId, action) {
+          // Make an AJAX request to handle the approval or rejection
+          fetch(`/events_u/approve_participant/${participateFormId}/${action}/`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': getCookie('csrftoken')  // Ensure the CSRF token is included
+              },
+              body: JSON.stringify({
+                  action: action
+              })
+          })
+          .then(response => response.json())
+          .then(data => {
+              if (data.success) {
+                  alert(data.message);
+                  location.reload();  // Reload the page to reflect the changes
+              } else {
+                  alert(data.message);
+              }
+          })
+          .catch(error => console.error('Error:', error));
+      }
+
+
+      // Utility function to get CSRF token
+      function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              const cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                  let cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
   </script>
   <style>
     body {
@@ -127,57 +167,56 @@
     <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
   </div>
 
-  <body>
-    <div class="content">
-      <h2>Danh sách người tham gia</h2>
+  <div class="content">
+    <h2>Danh sách người tham gia</h2>
 
-      <div class="filter-section">
-        <label>Sắp xếp theo trường:</label>
-        <select id="schoolFilter" onchange="filterParticipants()">
-          <option>Tất cả</option>
-          {% for school in schools %}
-            <option>{{ school }}</option>
-          {% endfor %}
-        </select>
+    <div class="filter-section">
+      <label>Sắp xếp theo trường:</label>
+      <select id="schoolFilter" onchange="filterParticipants()">
+        <option>Tất cả</option>
+        {% for school in schools %}
+          <option>{{ school }}</option>
+        {% endfor %}
+      </select>
 
-        <label>Top:</label>
-        <select id="topFilter" onchange="filterParticipants()">
-          <option value="all">Tất cả</option>
-          <option value="5">Top 5</option>
-          <option value="3">Top 3</option>
-          <option value="1">Top 1</option>
-        </select>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Tên người tham gia</th>
-            <th>Tham gia</th>
-            <th>Số tiền/Đóng góp</th>
-            <th>Trường</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for event in events %}
-            {% for participant in event.participants %}
-            <tr class="participant-row" 
-                data-school="{{ participant.school }}" 
-                data-contribution="{{ participant.contribution }}">
-              <td>{{ participant.name }}</td>
-              <td>{{ participant.date }}</td>
-              <td>{{ participant.contribution|floatformat:0 }} VND</td>
-              <td>{{ participant.school }}</td>
-            </tr>
-            {% endfor %}
-          {% endfor %}
-        </tbody>
-      </table>
+      <label>Top:</label>
+      <select id="topFilter" onchange="filterParticipants()">
+        <option value="all">Tất cả</option>
+        <option value="5">Top 5</option>
+        <option value="3">Top 3</option>
+        <option value="1">Top 1</option>
+      </select>
     </div>
 
-    <script>
-      // (giữ nguyên đoạn filterParticipants bạn có)
-    </script>
-  </body>
-
-  </html>
+    <table>
+      <thead>
+        <tr>
+          <th>Tên người tham gia</th>
+          <th>Tham gia</th>
+          <th>Số tiền/Đóng góp</th>
+          <th>Trường</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+          {% for participant in event.participants %}
+          <tr class="participant-row" 
+              data-school="{{ participant.school }}" 
+              data-contribution="{{ participant.contribution }}">
+            <td>{{ participant.name }}</td>
+            <td>{{ participant.date }}</td>
+            <td>{{ participant.contribution|floatformat:0 }} VND</td>
+            <td>{{ participant.school }}</td>
+            <td>
+              <button class="btn btn-success" onclick="handleApproval('{{ participant.id_participate_form }}', 'approve')">Đồng ý</button>
+              <button class="btn btn-danger" onclick="handleApproval('{{ participant.id_participate_form }}', 'reject')">Từ chối</button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

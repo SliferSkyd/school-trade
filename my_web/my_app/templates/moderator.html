@@ -133,35 +133,40 @@
 </head>
 <body>
 
-<div class="sidebar">
-  <h3>Kiểm duyệt viên</h3>
-  <h4>{{ user.full_name }}</h4>
-  <a href="{% url 'dashboard' %}">Dashboard</a>
+  <div class="sidebar">
+    <h3>Kiểm duyệt viên</h3>
+    <h4>{{ user.full_name }}</h4>
+    <a onclick="showContent('dashboard')">Dashboard</a>
+    
+    <a onclick="toggleMenu('postSubmenu')">Post</a>
 
-  <a href="#">Post</a>
-  <div class="submenu">
-    <a href="#">Chưa duyệt</a>
-    <div class="submenu">
-      <a href="{% url 'post_thanh_ly' %}">Thanh lý</a>
-      <a href="{% url 'post_trao_doi' %}">Trao đổi</a>
+    <div id="postSubmenu" class="submenu">
+      <a onclick="toggleMenu('postPending')">Chưa duyệt</a>
+
+      <div id="postPending" class="submenu">
+        <a onclick="showContent('post-thanh-ly')">Thanh lý</a>
+        <a onclick="showContent('post-trao-doi')">Trao đổi</a>
+      </div>
+
+      <a onclick="showContent('post-da-duyet')">Đã duyệt</a>
+      <a onclick="showContent('post-tu-choi')">Đã từ chối</a>
     </div>
-    <a href="{% url 'post_da_duyet' %}">Đã duyệt</a>
-    <a href="{% url 'post_tu_choi' %}">Đã từ chối</a>
-  </div>
 
-  <a href="#">Event</a>
-  <div class="submenu">
-    <a href="#">Chưa duyệt</a>
-    <div class="submenu">
-      <a href="{% url 'event_gay_quy' %}">Gây quỹ</a>
-      <a href="{% url 'event_quyen_gop' %}">Quyên góp</a>
+
+
+    <a onclick="toggleMenu('eventSubmenu')">Event</a>
+    <div id="eventSubmenu" class="submenu">
+      <a onclick="toggleMenu('eventPending')">Chưa duyệt</a>
+      <div id="eventPending" class="submenu">
+        <a onclick="showContent('event-gay-quy')">Gây quỹ</a>
+        <a onclick="showContent('event-quyen-gop')">Quyên góp</a>
+      </div>
+      <a onclick="showContent('event-da-duyet')">Đã duyệt</a>
+      <a onclick="showContent('event-tu-choi')">Đã từ chối</a>
     </div>
-    <a href="{% url 'event_da_duyet' %}">Đã duyệt</a>
-    <a href="{% url 'event_tu_choi' %}">Đã từ chối</a>
-  </div>
 
-  <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
-</div>
+    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+  </div>
 
   <div class="main-content">
 
@@ -207,9 +212,9 @@
 
         </div>
 
-        <h4>Bài đăng cần kiểm duyệt ({{ unverified_posts|length }})</h4>
+        <h4>Bài đăng: ({{ approved_posts|length }})</h4>
         <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-4 mt-3">
-        {% for post in unverified_posts %}
+        {% for post in approved_posts %}
         <div class="col">
           <div class="product-card">
             <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal" onclick="openImageModal('{% static 'images/' %}{{ post.product_image }}')">

@@ -24,7 +24,8 @@
          data-org="{{ event.id_group.name }}"
          data-start="{{ event.start_time|date:'d/m/Y' }}"
          data-end="{{ event.end_time|date:'d/m/Y' }}"
-         data-type-text="{{ event.type }}">
+         data-type-text="{{ event.type }}"
+         data-id="{{ event.id_event }}">
         <img src="{{ event.poster }}" alt="Ảnh sự kiện" />
         <h4>{{ event.name }}</h4>
         <p>Tổ chức: {{ event.id_group.name }}</p>
@@ -38,6 +39,7 @@
     {% endfor %}
 </div>
 
+<!-- Event Details Section -->
 <div class="detail-section" style="display:none;">
     <h3 id="event-title"></h3>
     <img id="event-image" src="" alt="Ảnh sự kiện" />
@@ -45,8 +47,15 @@
     <p id="event-type"></p>
     <p id="event-startDate"></p>
     <p id="event-endDate"></p>
+    <form id="participate-form" style="display:none;" onsubmit="submitParticipateForm(event)">
+        <input type="hidden" id="event-id" name="event_id" />
+        <textarea id="form-title" name="title" placeholder="Nhập tiêu đề"></textarea>
+        <textarea id="form-content" name="content" placeholder="Nhập nội dung"></textarea>
+        <button type="submit" class="btn-primary">Gửi tham gia</button>
+    </form>
     <button class="btn-back" onclick="goBack()">Quay lại</button>
 </div>
+
 {% endblock %}
 
 {% block script %}
@@ -62,6 +71,12 @@
         document.getElementById('event-type').innerText = "Loại sự kiện: " + el.dataset.typeText;
         document.getElementById('event-startDate').innerText = "Ngày tổ chức: " + el.dataset.start;
         document.getElementById('event-endDate').innerText = "Ngày kết thúc: " + el.dataset.end;
+
+        // Set event id in the form
+        document.getElementById('event-id').value = el.dataset.id;
+
+        // Show participate form
+        document.getElementById('participate-form').style.display = 'block';
     }
 
     // Quay lại danh sách sự kiện
@@ -85,22 +100,35 @@
         });
     }
 
-    // Hàm tham gia sự kiện
-    function joinEvent(eventId) {
-        fetch(`/events_u/join/${eventId}/`, {
+    // Hàm tham gia sự kiện (submit form)
+    function submitParticipateForm(event) {
+        event.preventDefault();
+        const form = document.getElementById('participate-form');
+        const eventId = document.getElementById('event-id').value;
+        const title = document.getElementById('form-title').value;
+        const content = document.getElementById('form-content').value;
+
+        const data = {
+            event_id: eventId,
+            title: title,
+            content: content
+        };
+
+        fetch('/events_u/participate/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken'),
             },
-            body: JSON.stringify({ event_id: eventId })
+            body: JSON.stringify(data)
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 alert("Tham gia sự kiện thành công!");
+                goBack(); // Go back to the event list after submission
             } else {
-                alert("Bạn đã tham gia sự kiện này rồi!");
+                alert("Đã xảy ra lỗi khi tham gia sự kiện!");
             }
         })
         .catch(error => {

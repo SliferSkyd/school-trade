@@ -671,21 +671,29 @@ def event_management(request):
 def event_detail(request):
     events = []
 
+    # Fetch events and their participants
     for event in Event.objects.all():
         participants_data = []
 
+        # Filter ParticipateForm entries for this event
         forms = ParticipateForm.objects.filter(id_event=event)
 
         for form in forms:
             user = form.id_user
             school_name = user.id_school.name if user.id_school else "Không rõ"
-            
+            contribution = 0  # You can calculate the actual contribution here if needed
+
+            # Add participant data, including event and participant IDs
             from django.utils.timezone import localtime
             participants_data.append({
                 'name': user.full_name or user.username,
                 'date': localtime(form.time_create_form).strftime('%d/%m/%Y') if form.time_create_form else "Không rõ",
-                'contribution': 0,  # Nếu có bảng Transactions thì tính tổng ở đây
-                'school': school_name
+                'contribution': contribution,  # Placeholder for contribution (can be calculated if you have transaction data)
+                'school': school_name,
+                'participant_id': form.id_user.id_user,  # Include participant ID
+                'event_id': event.id_event,  # Include event ID
+                'school_name': school_name,  # Include school name
+                'id_participate_form': form.id_participate_form  # Include id_participate_form
             })
 
         events.append({
@@ -771,6 +779,42 @@ def post_list(request):
         'categories': categories
     })
 
+def add_post(request):
+    if request.method == 'POST':
+        # Get data from the form
+        category_id = request.POST.get('category')
+        post_type = request.POST.get('post_type')
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        price = request.POST.get('price')
+        product_image = request.FILES.get('product_image')
+        
+        # Get the current user (assuming the user is logged in)
+        user = Users.objects.get(username=request.user.username)
+
+        # Get category object
+        category = Category.objects.get(id_category=category_id)
+
+        # Create the new post object
+        post = Post.objects.create(
+            id_user=user,
+            id_category=category,
+            title=title,
+            content=description,
+            price=price,
+            type_post=post_type,
+            product_image=product_image,
+            status='Chưa duyệt',  # Default status
+            date_created=timezone.now()
+        )
+
+        # Return a JSON response with success message
+        return JsonResponse({'success': True})
+
+    # Render the page with categories to show the form
+    categories = Category.objects.all()
+    return render(request, 'user_/add_post.html', {'categories': categories})
+
 def event_list(request):
     events = Event.objects.filter(status="Đã duyệt")
     return render(request, 'user_/event.html', {'events': events})
@@ -847,8 +891,18 @@ def profile_view_u(request):
     # Bài đăng của user
     data['user_posts'] = Post.objects.filter(id_user=user)
 
-    # Bài mua/trao đổi thành công (người xác minh là user)
-    data['completed_posts'] = Post.objects.filter(verified_person=user, status="Đã duyệt")
+
+    approved_offers = TradingOffer.objects.filter(status="Đã duyệt", id_user=user)
+
+    print(approved_offers)
+    
+# Get the posts associated with the approved offers where the buyer is the current user
+    buyer_posts = Post.objects.filter(
+        id_post__in=approved_offers.values('id_post')
+    )
+
+    # Assign the result to the data dictionary
+    data['completed_posts'] = buyer_posts
 
     # Thống kê theo tháng
     mua_stats = Post.objects.filter(verified_person=user, type_post='thanh lý') \
@@ -911,8 +965,7 @@ def notification_view(request):
 
 
 def user_dashboard(request):
-    data = get_dashboard_data()
-    return render(request, 'user_/home.html', data)
+    return redirect('post_list')
 
 
 
@@ -1014,3 +1067,173 @@ def statistics(request):
     }
 
     return render(request, 'admin/statistics.html', context)
+
+from django.http import JsonResponse
+from django.utils import timezone
+from .models import ParticipateForm, Event, Notification, Users
+import json
+
+# View to handle participation form submission
+def participate_event(request):
+    if request.method == 'POST':
+        try:
+            # Retrieve the data from the form submission
+            data = json.loads(request.body)
+            event_id = data.get('event_id')
+            title = data.get('title')
+            content = data.get('content')
+
+            # Get the logged-in user
+            user = request.user  # Use the user object directly, not just the user ID
+
+            # Retrieve the Event object using event_id
+            event = Event.objects.get(id_event=event_id)
+
+            user = Users.objects.get(username=user.username)
+            # Log the event and user information
+            print(f"User: {user.username}, Event: {event.name}, Title: {title}, Content: {content}")
+
+            # Create the ParticipateForm object
+            participate_form = ParticipateForm.objects.create(
+                id_event=event,  # Use the actual Event object, not the ID
+                id_user=user,    # Use the actual User object, not just the ID
+                title=title,
+                content=content,
+                status_form='Chưa duyệt',  # Set the status to 'Pending' by default
+                time_create_form=timezone.now(),
+            )
+
+            print(f"Tham gia sự kiện: {participate_form}")
+
+            # Create a notification for the participation
+            notification = Notification.objects.create(
+                content=f'Người dùng {user.full_name} yêu cầu tham gia sự kiện: {event.name}',
+                title='Thông báo tham gia sự kiện',
+                id_user=user,
+                id_event=event,
+                noti_time=timezone.now(),
+                status_read='Unread'
+            )
+
+            # Associate notification with participate form
+            participate_form.id_notification = notification
+            participate_form.save()
+
+            return JsonResponse({'success': True, 'message': 'Tham gia sự kiện thành công và thông báo đã được tạo!'})
+        
+        except Event.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Sự kiện không tồn tại!'})
+        
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    else:
+        return JsonResponse({'success': False, 'message': 'Không phải yêu cầu POST'})
+
+from django.http import JsonResponse
+from .models import ParticipateForm
+
+def approve_participant(request, participate_form_id, action):
+    if request.method == 'POST':
+        try:
+            # Find the ParticipateForm by its primary key (id_participate_form)
+            participate_form = ParticipateForm.objects.get(id_participate_form=participate_form_id)
+
+            # Perform the action: approve or reject
+            if action == 'approve':
+                participate_form.status_form = 'Đã duyệt'  # Mark as approved
+                participate_form.save()
+                return JsonResponse({'success': True, 'message': 'Đã duyệt tham gia sự kiện!'})
+
+            elif action == 'reject':
+                participate_form.status_form = 'Từ chối'  # Mark as rejected
+                participate_form.save()
+                return JsonResponse({'success': True, 'message': 'Đã từ chối tham gia sự kiện!'})
+
+            return JsonResponse({'success': False, 'message': 'Hành động không hợp lệ'})
+        except ParticipateForm.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Tham gia sự kiện không tồn tại'})
+
+    return JsonResponse({'success': False, 'message': 'Yêu cầu không hợp lệ'})
+
+def buy_post(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        post_id = data.get('post_id')
+
+        try:
+            post = Post.objects.get(id_post=post_id)
+            buyer = Users.objects.get(username=request.user.username)
+
+            # Create a new TradingOffer instance
+            trading_offer = TradingOffer.objects.create(
+                product_name=post.title,
+                id_post=post,
+                id_user=buyer,
+                status="Chờ duyệt",  # Initially the offer is waiting for approval
+                created_at=timezone.now()
+            )
+            # Update the post status to "Đã đặt"
+            post.status = "Đã đặt"
+            post.save()
+
+            # Optionally, create a notification or any other related processes
+
+            return JsonResponse({'success': True})
+
+        except Post.DoesNotExist:
+            return JsonResponse({'success':  False, 'message': 'Bài đăng không tồn tại'})
+        except Users.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Người dùng không tồn tại'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+def orders(request):
+    user = Users.objects.get(username=request.user.username)
+
+    posts = Post.objects.filter(id_user=user)
+
+    # Get the trading offers for those posts
+    trading_offers = TradingOffer.objects.filter(id_post__in=posts, status='Chờ duyệt')
+
+    context = {
+        'trading_offers': trading_offers
+    }
+    return render(request, 'user_/order.html', context)
+
+def approve_order(request, offer_id):
+    if request.method == 'POST':
+        # Parse the data sent from frontend
+        data = json.loads(request.body)
+        action = data.get('action')
+
+
+        try:
+            offer = get_object_or_404(TradingOffer, id_trading_offer=offer_id)
+            post = offer.id_post
+            
+            # Handle the action (approve or reject)
+            if action == 'approve':
+                # Approve the order and change post status to "Đã bán"
+                post.status = 'Đã bán'  # Set post status to "Sold"
+                post.save()
+                offer.status = 'Đã duyệt'  # Optionally change offer status to 'Approved'
+                offer.save()
+
+            elif action == 'reject':
+                # Reject the order and revert post status to "Đã duyệt"
+                post.status = 'Đã duyệt'  # Set post status back to "Approved"
+                post.save()
+                offer.status = 'Từ chối'  # Change offer status to 'Rejected'
+                offer.save()
+
+            # Delete the trading offer after processing
+            # offer.delete()
+
+            return JsonResponse({'success': True})
+
+        except TradingOffer.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Đơn hàng không tồn tại'})
+
+    return JsonResponse({'success': False, 'message': 'Yêu cầu không hợp lệ'})

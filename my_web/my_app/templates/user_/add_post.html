@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tạo Bài Đăng{% endblock %}
+
+{% block content %}
+<h2 class="page-title">Tạo Bài Đăng</h2>
+
+<form id="create-post-form" method="POST" enctype="multipart/form-data" class="post-form">
+    {% csrf_token %}
+    
+    <div class="form-group">
+        <label for="category">Danh mục:</label>
+        <select id="category" name="category" required class="form-control">
+            <option value="" disabled selected>Chọn danh mục</option> <!-- Ensure this is disabled and not selected -->
+            {% for category in categories %}
+                <option value="{{ category.id_category }}">{{ category.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+
+    <div class="form-group">
+        <label for="postType">Loại bài đăng:</label>
+        <select id="postType" name="post_type" required class="form-control">
+            <option value="thanh lý">Bài đăng thanh lý</option>
+            <option value="trao đổi">Bài đăng trao đổi</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="title">Tiêu đề bài đăng:</label>
+        <input type="text" id="title" name="title" class="form-control" required />
+    </div>
+
+    <div class="form-group">
+        <label for="product_image">Ảnh sản phẩm:</label>
+        <input type="file" id="product_image" name="product_image" accept="image/*" class="form-control" required />
+        <div id="image-preview-container" style="display:none;">
+            <h4>Preview:</h4>
+            <img id="image-preview" src="" alt="Product Image Preview" width="300" class="img-thumbnail" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="description">Mô tả sản phẩm:</label>
+        <textarea id="description" name="description" rows="4" class="form-control" required></textarea>
+    </div>
+
+    <div class="form-group">
+        <label for="price">Giá:</label>
+        <input type="number" id="price" name="price" step="0.01" min="0" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <button type="submit" class="btn btn-primary">Tạo bài đăng</button>
+    </div>
+    
+    <p id="feedback" class="feedback-text"></p>
+</form>
+
+{% endblock %}
+
+{% block script %}
+<script>
+
+    // Get CSRF token from the cookie
+    function getCSRFToken() {
+        let csrfToken = null;
+        document.cookie.split(';').forEach(function (cookie) {
+            if (cookie.trim().startsWith('csrftoken=')) {
+                csrfToken = cookie.split('=')[1];
+            }
+        });
+        return csrfToken;
+    }
+    // Handle image preview
+    document.getElementById('product_image').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const imagePreview = document.getElementById('image-preview');
+                imagePreview.src = event.target.result;
+                document.getElementById('image-preview-container').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Form validation and submission
+    document.getElementById('create-post-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const title = document.getElementById('title').value.trim();
+        const category = document.getElementById('category').value;
+        const postType = document.getElementById('postType').value;
+        const description = document.getElementById('description').value.trim();
+        const price = document.getElementById('price').value.trim();
+        const productImage = document.getElementById('product_image').files[0];
+
+        // Validate form fields
+        if (!title || !category || !postType || !description) {
+            document.getElementById('feedback').textContent = 'Vui lòng điền đầy đủ thông tin!';
+            return;
+        }
+
+        // Submit the form if everything is valid
+        const formData = new FormData();
+        formData.append('category', category);
+        formData.append('post_type', postType);
+        formData.append('title', title);
+        formData.append('description', description);
+        formData.append('price', price);
+        formData.append('product_image', productImage);
+
+        // Use fetch to submit the form data
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCSRFToken()  // Include CSRF token in the header
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Bài đăng đã được tạo thành công!');
+            } else {
+                document.getElementById('feedback').textContent = 'Có lỗi xảy ra. Vui lòng thử lại.';
+            }
+        })
+        .catch(error => {
+            document.getElementById('feedback').textContent = 'Có lỗi xảy ra. Vui lòng thử lại.';
+            console.error('Error:', error);
+        });
+    });
+</script>
+{% endblock %}
+
+{% block css %}
+<style>
+    /* Styling the page */
+    .page-title {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #333;
+    }
+
+    .post-form {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        font-weight: bold;
+        color: #333;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        font-size: 16px;
+    }
+
+    .form-control:focus {
+        border-color: #4CAF50;
+        box-shadow: 0 0 5px rgba(0, 128, 0, 0.5);
+    }
+
+    .btn-primary {
+        background-color: #4CAF50;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        width: 100%;
+    }
+
+    .btn-primary:hover {
+        background-color: #45a049;
+    }
+
+    .feedback-text {
+        color: red;
+        font-size: 14px;
+        margin-top: 10px;
+    }
+
+    #image-preview-container {
+        margin-top: 15px;
+        text-align: center;
+    }
+
+    .img-thumbnail {
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
