@@ -51,6 +51,10 @@
         <input type="hidden" id="event-id" name="event_id" />
         <textarea id="form-title" name="title" placeholder="Nhập tiêu đề"></textarea>
         <textarea id="form-content" name="content" placeholder="Nhập nội dung"></textarea>
+        <div class="form-group">
+            <label for="contribution">Số tiền đóng góp:</label>
+            <input type="number" id="form-contribution" name="contribution" placeholder="Nhập số tiền đóng góp" min="0" class="form-control" required />
+        </div>
         <button type="submit" class="btn-primary">Gửi tham gia</button>
     </form>
     <button class="btn-back" onclick="goBack()">Quay lại</button>
@@ -107,11 +111,13 @@
         const eventId = document.getElementById('event-id').value;
         const title = document.getElementById('form-title').value;
         const content = document.getElementById('form-content').value;
+        const contribution = document.getElementById('form-contribution').value;
 
         const data = {
             event_id: eventId,
             title: title,
-            content: content
+            content: content,
+            contribution: contribution  // Include contribution amount
         };
 
         fetch('/events_u/participate/', {

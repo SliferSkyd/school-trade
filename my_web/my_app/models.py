@@ -211,6 +211,7 @@ class ParticipateForm(models.Model):
     time_create_form = models.DateTimeField(blank=True, null=True)
     time_update_status_form = models.DateTimeField(blank=True, null=True)
     id_notification = models.ForeignKey(Notification, models.DO_NOTHING, db_column='id_notification', blank=True, null=True)
+    donated_amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, default=0)
 
     class Meta:
         managed = True

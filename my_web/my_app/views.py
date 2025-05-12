@@ -695,8 +695,10 @@ def event_detail(request):
 
         for form in forms:
             user = form.id_user
+            if not user:
+                continue
             school_name = user.id_school.name if user.id_school else "Không rõ"
-            contribution = 0  # You can calculate the actual contribution here if needed
+            contribution = form.donated_amount  # You can calculate the actual contribution here if needed
 
             # Add participant data, including event and participant IDs
             from django.utils.timezone import localtime
@@ -1134,58 +1136,32 @@ import json
 # View to handle participation form submission
 def participate_event(request):
     if request.method == 'POST':
+        data = json.loads(request.body)
+        event_id = data.get('event_id')
+        title = data.get('title')
+        content = data.get('content')
+        contribution = data.get('contribution', 0)
+
         try:
-            # Retrieve the data from the form submission
-            data = json.loads(request.body)
-            event_id = data.get('event_id')
-            title = data.get('title')
-            content = data.get('content')
-
-            # Get the logged-in user
-            user = request.user  # Use the user object directly, not just the user ID
-
-            # Retrieve the Event object using event_id
             event = Event.objects.get(id_event=event_id)
-
-            user = Users.objects.get(username=user.username)
-            # Log the event and user information
-            print(f"User: {user.username}, Event: {event.name}, Title: {title}, Content: {content}")
-
-            # Create the ParticipateForm object
+            user = Users.objects.get(username=request.user.username)
+            # Create participation form instance with contribution
             participate_form = ParticipateForm.objects.create(
-                id_event=event,  # Use the actual Event object, not the ID
-                id_user=user,    # Use the actual User object, not just the ID
+                id_event=event,
                 title=title,
                 content=content,
-                status_form='Chưa duyệt',  # Set the status to 'Pending' by default
-                time_create_form=timezone.now(),
-            )
-
-            print(f"Tham gia sự kiện: {participate_form}")
-
-            # Create a notification for the participation
-            notification = Notification.objects.create(
-                content=f'Người dùng {user.full_name} yêu cầu tham gia sự kiện: {event.name}',
-                title='Thông báo tham gia sự kiện',
+                status_form='Chưa duyệt',  # Initially pending
                 id_user=user,
-                id_event=event,
-                noti_time=timezone.now(),
-                status_read='Unread'
+                donated_amount=contribution,
+                time_create_form=timezone.now()
             )
 
-            # Associate notification with participate form
-            participate_form.id_notification = notification
-            participate_form.save()
+            return JsonResponse({'success': True, 'message': 'Tham gia sự kiện thành công!'})
 
-            return JsonResponse({'success': True, 'message': 'Tham gia sự kiện thành công và thông báo đã được tạo!'})
-        
         except Event.DoesNotExist:
-            return JsonResponse({'success': False, 'message': 'Sự kiện không tồn tại!'})
-        
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': str(e)})
-    else:
-        return JsonResponse({'success': False, 'message': 'Không phải yêu cầu POST'})
+            return JsonResponse({'success': False, 'message': 'Sự kiện không tồn tại'})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
 from django.http import JsonResponse
 from .models import ParticipateForm
@@ -1195,9 +1171,34 @@ def approve_participant(request, participate_form_id, action):
         try:
             # Find the ParticipateForm by its primary key (id_participate_form)
             participate_form = ParticipateForm.objects.get(id_participate_form=participate_form_id)
-
+            if participate_form.status_form != 'Chưa duyệt':
+                return JsonResponse({'success': False, 'message': 'Tham gia sự kiện đã được xử lý trước đó'})
             # Perform the action: approve or reject
             if action == 'approve':
+            
+                account = Accounts.objects.get(user=participate_form.id_user)
+                # Deduct the contribution amount from the user's account
+                if participate_form.donated_amount > 0 and account.balance >= participate_form.donated_amount:
+                    account.balance -= participate_form.donated_amount
+                    account_group = Accounts.objects.get(user=Users.objects.get(username=request.user.username))
+                    account_group.balance += participate_form.donated_amount
+                    account_group.save()
+                    account.save()
+
+                    # Create a record of the transaction
+                    Transactions.objects.create(
+                        from_account=account,
+                        to_account=account_group,
+                        amount=participate_form.donated_amount,
+                        transaction_type='donation',
+                        transaction_date=timezone.now(),
+                        content=f"Người dùng {participate_form.id_user.username} đã tham gia sự kiện: {participate_form.id_event.name} với số tiền {participate_form.donated_amount} VNĐ."
+                    )
+
+                else: 
+                    return JsonResponse({'success': False, 'message': 'Số tiền đóng góp không hợp lệ hoặc không đủ tiền trong tài khoản'})
+
+
                 participate_form.status_form = 'Đã duyệt'  # Mark as approved
                 participate_form.save()
                 return JsonResponse({'success': True, 'message': 'Đã duyệt tham gia sự kiện!'})
@@ -1212,6 +1213,9 @@ def approve_participant(request, participate_form_id, action):
             return JsonResponse({'success': False, 'message': 'Tham gia sự kiện không tồn tại'})
 
     return JsonResponse({'success': False, 'message': 'Yêu cầu không hợp lệ'})
+from django.http import JsonResponse
+from django.utils import timezone
+from my_app.models import Post, Users, TradingOffer, Accounts
 
 def buy_post(request):
     if request.method == 'POST':
@@ -1219,29 +1223,43 @@ def buy_post(request):
         post_id = data.get('post_id')
 
         try:
+            # Fetch the post and the buyer
             post = Post.objects.get(id_post=post_id)
             buyer = Users.objects.get(username=request.user.username)
+            buyer_account = Accounts.objects.get(user=buyer)  # Get the user's account
 
-            # Create a new TradingOffer instance
-            trading_offer = TradingOffer.objects.create(
-                product_name=post.title,
-                id_post=post,
-                id_user=buyer,
-                status="Chờ duyệt",  # Initially the offer is waiting for approval
-                created_at=timezone.now()
-            )
-            # Update the post status to "Đã đặt"
-            post.status = "Đã đặt"
-            post.save()
+            # Check if the buyer has enough balance
+            if buyer_account.balance >= post.price:
+                # Create a new TradingOffer instance
+                trading_offer = TradingOffer.objects.create(
+                    product_name=post.title,
+                    id_post=post,
+                    id_user=buyer,
+                    status="Chờ duyệt",  # Initially the offer is waiting for approval
+                    created_at=timezone.now()
+                )
 
-            # Optionally, create a notification or any other related processes
+                # Update the post status to "Đã đặt"
+                post.status = "Đã đặt"
+                post.save()
 
-            return JsonResponse({'success': True})
+                # Subtract the post price from the buyer's account balance
+                buyer_account.balance -= post.price
+                buyer_account.save()
+
+                # Optionally, create a notification or any other related processes
+
+                return JsonResponse({'success': True, 'message': 'Đặt bài thành công!'})
+
+            else:
+                return JsonResponse({'success': False, 'message': 'Bạn không đủ tiền để mua bài đăng'})
 
         except Post.DoesNotExist:
-            return JsonResponse({'success':  False, 'message': 'Bài đăng không tồn tại'})
+            return JsonResponse({'success': False, 'message': 'Bài đăng không tồn tại'})
         except Users.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Người dùng không tồn tại'})
+        except Accounts.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Tài khoản người dùng không tồn tại'})
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
 
@@ -1278,6 +1296,28 @@ def approve_order(request, offer_id):
                 post.save()
                 offer.status = 'Đã duyệt'  # Optionally change offer status to 'Approved'
                 offer.save()
+                # Create a record of the transaction and update the buyer's account
+                
+                
+                buyer = offer.id_user
+                buyer_account = Accounts.objects.get(user=buyer)
+                buyer_account.balance -= post.price  # Deduct the price from the buyer's account
+                buyer_account.save()
+
+                seller = post.id_user
+                seller_account = Accounts.objects.get(user=seller)
+                seller_account.balance += post.price  # Add the price to the seller's account
+                seller_account.save()
+                
+                Transactions.objects.create(
+                    from_account=buyer_account,
+                    to_account=seller.account,
+                    amount=post.price,
+                    transaction_type='buy',
+                    transaction_date=timezone.now(),
+                    status='completed',
+                    content=f"Người dùng {buyer.username} đã mua bài đăng: {post.title} với giá {post.price} VNĐ từ người dùng {seller.username}."
+                )
 
             elif action == 'reject':
                 # Reject the order and revert post status to "Đã duyệt"
@@ -1322,14 +1362,46 @@ def bibi_login_view(request):
 
 
 def bibi_dashboard(request):
-    try:
-        user_obj = Users.objects.get(username=request.user.username)
-        accounts = Accounts.objects.filter(user=user_obj)
-        return render(request, 'bibi/dashboard.html', {'user': user_obj, 'accounts': accounts})
-    except Users.DoesNotExist:
-        messages.error(request, 'Không tìm thấy thông tin người dùng.')
-        return redirect('logout')
+    user = Users.objects.get(username=request.user.username)
+    account = Accounts.objects.get(user=user)
 
+    if request.method == 'POST':
+        # Handle deposit
+        if 'deposit' in request.POST:
+            amount = int(request.POST.get('amount'))
+            if amount > 0:
+                account.balance += amount  # Add to balance
+                account.save()
+                # Create a transaction record
+                Transactions.objects.create(
+                    from_account=None,
+                    to_account=account,
+                    amount=amount,
+                    transaction_type='deposit',
+                    transaction_date=timezone.now(),
+                    content=f"Nạp tiền vào tài khoản {account.account_id}",
+                )
+            return redirect('bibi_dashboard')  # Redirect to avoid form resubmission
+
+        # Handle withdrawal
+        elif 'withdraw' in request.POST:
+            amount = int(request.POST.get('amount'))
+            if amount > 0 and account.balance >= amount:
+                account.balance -= amount  # Subtract from balance
+                account.save()
+                Transactions.objects.create(
+                    from_account=account,
+                    to_account=None,
+                    amount=- amount,
+                    transaction_type='withdrawal',
+                    transaction_date=timezone.now(),
+                    content=f"Rút tiền từ tài khoản {account.account_id}",
+                )
+            return redirect('bibi_dashboard')  # Redirect to avoid form resubmission
+
+    
+    return render(request, 'bibi/dashboard.html', {'user': user, 'accounts': {account}})
+    
 
 def bibi_transfer(request):
     try:
