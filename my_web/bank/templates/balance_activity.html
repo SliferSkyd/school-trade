@@ -1,0 +1,126 @@
+<!-- templates/balance_activity.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lịch sử giao dịch - BIBI Bank</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f0f4f8;
+      color: #333;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 240px;
+      background-color: #2c3e50;
+      padding-top: 30px;
+      flex-shrink: 0;
+    }
+
+    .sidebar h1 {
+      color: #ecf0f1;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 22px;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 15px 20px;
+      color: #ecf0f1;
+      text-decoration: none;
+      font-size: 16px;
+    }
+
+    .sidebar a:hover {
+      background-color: #34495e;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 40px;
+    }
+
+    h2 {
+      color: #2c3e50;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background-color: #fff;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #2980b9;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    p {
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h1>BIBI Bank</h1>
+    <a href="{% url 'dashboard' %}">🏠 Dashboard</a>
+    <a href="/transfer/">💸 Chuyển tiền</a>
+    <a href="{% url 'balance_activity' %}">📜 Lịch sử giao dịch</a>
+    <a href="/logout/">🚪 Đăng xuất</a>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <h2>Lịch sử biến động số dư</h2>
+
+    {% if transactions %}
+      <table>
+        <tr>
+          <th>Thời gian</th>
+          <th>Loại</th>
+          <th>Số tiền</th>
+          <th>Từ tài khoản</th>
+          <th>Đến tài khoản</th>
+          <th>Nội dung</th>
+        </tr>
+        {% for t in transactions %}
+          <tr>
+            <td>{{ t.transaction_date }}</td>
+            <td>{{ t.transaction_type }}</td>
+            <td>{{ t.amount }} VNĐ</td>
+            <td>{% if t.from_account %}{{ t.from_account.account_id }}{% else %}N/A{% endif %}</td>
+            <td>{% if t.to_account %}{{ t.to_account.account_id }}{% else %}N/A{% endif %}</td>
+            <td>{{ t.content }}</td>
+          </tr>
+        {% endfor %}
+      </table>
+    {% else %}
+      <p>Không có giao dịch nào.</p>
+    {% endif %}
+  </div>
+
+</body>
+</html>

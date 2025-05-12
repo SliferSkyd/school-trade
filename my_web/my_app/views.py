@@ -99,7 +99,7 @@ def moderate_event(request):
             Notification.objects.create(
                 content=noti_content,
                 title='Trạng thái sự kiện',
-                id_group=event.id_group,
+                id_user=event.id_group,
                 id_event=event,
                 noti_time=now(),
                 status_read='Chưa đọc'
@@ -132,7 +132,7 @@ def user_event(request):
             Notification.objects.create(
                 content=noti_content,
                 title='Trạng thái sự kiện',
-                id_group=event.id_group,
+                id_user=event.id_group,
                 id_event=event,
                 noti_time=now(),
                 status_read='Chưa đọc'
@@ -163,7 +163,7 @@ def user_post(request):
             Notification.objects.create(
                 content=noti_content,
                 title='Trạng thái sự kiện',
-                id_group=event.id_group,
+                id_user=event.id_group,
                 id_event=event,
                 noti_time=now(),
                 status_read='Chưa đọc'
@@ -960,7 +960,8 @@ def admin_detail(request):
     return render(request, 'group/admin_detail.html')
 
 def notification_view(request):
-    notifications = Notification.objects.order_by('-noti_time')
+    user = Users.objects.get(username=request.user.username)
+    notifications = Notification.objects.order_by('-noti_time').filter(id_user=user)
     return render(request, 'group/noti.html', {'notifications': notifications})
 
 
