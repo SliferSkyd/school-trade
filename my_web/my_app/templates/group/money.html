@@ -67,9 +67,29 @@
   </div>
   <div class="content">
     <h2>Quản lý Ví ảo</h2>
-    <p>Số dư hiện tại: <span>1,000,000 VND</span></p>
-    <button class="btn btn-primary">Nạp tiền</button>
-    <button class="btn btn-warning">Rút tiền</button>
+
+    <p>Số dư hiện tại: <span>{{ account.balance|floatformat:2 }} VND</span></p>
+
+    <!-- Form to Deposit Money -->
+    <form method="POST" class="deposit-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="deposit_amount">Nạp tiền:</label>
+            <input type="number" id="deposit_amount" name="amount" min="0" class="form-control" required />
+        </div>
+        <button type="submit" name="deposit" class="btn btn-primary">Nạp tiền</button>
+    </form>
+
+    <!-- Form to Withdraw Money -->
+    <form method="POST" class="withdraw-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="withdraw_amount">Rút tiền:</label>
+            <input type="number" id="withdraw_amount" name="amount" min="0" class="form-control" required />
+        </div>
+        <button type="submit" name="withdraw" class="btn btn-warning">Rút tiền</button>
+    </form>
+
   </div>
 </body>
 </html>

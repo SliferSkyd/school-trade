@@ -730,7 +730,49 @@ def edit_event(request):
     return render(request, 'group/edit_event.html')
 
 def money_view(request):
-    return render(request, 'group/money.html')
+
+    user = Users.objects.get(username=request.user.username)
+    account = Accounts.objects.get(user=user)
+
+    if request.method == 'POST':
+        # Handle deposit
+        if 'deposit' in request.POST:
+            amount = int(request.POST.get('amount'))
+            if amount > 0:
+                account.balance += amount  # Add to balance
+                account.save()
+                # Create a transaction record
+                Transactions.objects.create(
+                    from_account=None,
+                    to_account=account,
+                    amount=amount,
+                    transaction_type='deposit',
+                    transaction_date=timezone.now(),
+                    content=f"Nạp tiền vào tài khoản {account.account_id}",
+                )
+            return redirect('money')  # Redirect to avoid form resubmission
+
+        # Handle withdrawal
+        elif 'withdraw' in request.POST:
+            amount = int(request.POST.get('amount'))
+            if amount > 0 and account.balance >= amount:
+                account.balance -= amount  # Subtract from balance
+                account.save()
+                Transactions.objects.create(
+                    from_account=account,
+                    to_account=None,
+                    amount=- amount,
+                    transaction_type='withdrawal',
+                    transaction_date=timezone.now(),
+                    content=f"Rút tiền từ tài khoản {account.account_id}",
+                )
+            return redirect('money')  # Redirect to avoid form resubmission
+
+    context = {
+        'account': account,  # Pass the account balance to the template
+    }
+
+    return render(request, 'group/money.html', context)
 
 def member_view(request):
     group = get_object_or_404(GroupInfo, id_group=request.user.id)
@@ -1259,7 +1301,9 @@ def approve_order(request, offer_id):
 
 
 def bibi_home_view(request):
-    return render(request, 'bibi/home.html')
+    if request.user.is_authenticated:
+        return redirect('bibi_dashboard')
+    return redirect('home')
 
 
 def bibi_login_view(request):
@@ -1365,7 +1409,7 @@ def bibi_balance_activity(request):
 
 def bibi_logout_view(request):
     logout(request)
-    return redirect('bibi/home')
+    return redirect('home')
 
 import random
 import string

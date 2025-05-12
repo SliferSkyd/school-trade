@@ -289,18 +289,6 @@ class TradingOffer(models.Model):
         db_table = 'trading_offer'
 
 
-class Transactions(models.Model):
-    id_transaction = models.AutoField(primary_key=True)
-    amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    trans_content = models.TextField(blank=True, null=True)
-    tranfer_time = models.DateTimeField(blank=True, null=True)
-    id_notification = models.ForeignKey(Notification, models.DO_NOTHING, db_column='id_notification', blank=True, null=True)
-
-    class Meta:
-        managed = True
-        db_table = 'transactions'
-
-
 class Users(models.Model):
     id_user = models.AutoField(primary_key=True)
     social_score = models.IntegerField(blank=True, null=True)
@@ -319,6 +307,34 @@ class Users(models.Model):
         managed = True
         db_table = 'users'
 
+class Accounts(models.Model):
+    account_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(Users, models.DO_NOTHING, blank=True, null=True)  # ForeignKey from myapp's Users model
+    balance = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True)
+    account_type = models.CharField(max_length=50, blank=True, null=True)
+    status = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'accounts'
+        
+class Transactions(models.Model):
+    transaction_id = models.AutoField(primary_key=True)
+    from_account = models.ForeignKey(Accounts, models.DO_NOTHING, blank=True, null=True)
+    to_account = models.ForeignKey(Accounts, models.DO_NOTHING, related_name='transactions_to_account_set', blank=True, null=True)
+    amount = models.DecimalField(max_digits=15, decimal_places=2)
+    transaction_type = models.CharField(max_length=50, null=True)
+    transaction_date = models.DateTimeField(blank=True, null=True)
+    status = models.CharField(max_length=50, blank=True, null=True)
+    content = models.CharField(max_length=255, blank=True, null=True)  # 👈 thêm dòng này
+
+    class Meta:
+        managed = True
+        db_table = 'transactions'
+
+
+
 
 class Vote(models.Model):
     id_vote = models.AutoField(primary_key=True)
@@ -331,15 +347,3 @@ class Vote(models.Model):
     class Meta:
         managed = True
         db_table = 'vote'
-
-class Accounts(models.Model):
-    account_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(Users, models.DO_NOTHING, blank=True, null=True)  # ForeignKey from myapp's Users model
-    balance = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True)
-    account_type = models.CharField(max_length=50, blank=True, null=True)
-    status = models.CharField(max_length=50, blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True)
-
-    class Meta:
-        managed = True
-        db_table = 'accounts'
