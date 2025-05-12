@@ -29,7 +29,8 @@ urlpatterns = [
     path('group/profile/', profile_view, name='profile'),
     path('group/admin_detail/', admin_detail, name='admin_detail'),
     path('group/noti/', notification_view, name='noti'),
-    path('group/add_mem/', add_mem_view, name='add_mem'),
+    path('group/member/', member_view, name='member'),
+    
     # Quản lý thành viên
     path('members/', member_management, name='member-management'),
     path('members/add/', add_member, name='add-member'),

@@ -71,7 +71,7 @@
     <div class="admin-info">Quản trị - group1</div>
     
     <button onclick="window.location.href='{% url 'profile' %}'">Thông tin cá nhân</button>
-    <button onclick="window.location.href='{% url 'add_mem' %}'">Quản lý thành viên</button>
+    <button onclick="window.location.href='{% url 'member' %}'">Quản lý thành viên</button>
     <button onclick="window.location.href='{% url 'event_detail' %}'">Quản lý sự kiện</button>  
     <button onclick="window.location.href='{% url 'money' %}'">Nạp/Rút tiền</button>
     <button onclick="window.location.href='{% url 'noti' %}'">Thông báo</button>
@@ -92,6 +92,7 @@
       {% for admin in admins %}
         <div class="event-card">
           <h4>{{ admin.username }}</h4>
+          <p><strong>Tên: {{ admin.full_name }}</strong></p>
           <p><strong>Email:</strong> {{ admin.email }}</p>
           <p><strong>Trường học:</strong> {{ admin.id_school.name }}</p>
         </div>

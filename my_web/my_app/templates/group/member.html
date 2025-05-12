@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chi tiết sự kiện</title>
+  <script>
+      function filterParticipants() {
+          const schoolFilter = document.getElementById("schoolFilter").value;
+          const topFilter = document.getElementById("topFilter").value;
+          const rows = document.querySelectorAll(".participant-row");
+
+          const participants = Array.from(rows).map(row => ({
+              element: row,
+              school: row.dataset.school,
+              contribution: parseInt(row.dataset.contribution),
+          }));
+
+          const filtered = schoolFilter === "Tất cả"
+              ? participants
+              : participants.filter(p => p.school === schoolFilter);
+
+          // Sắp xếp giảm dần theo đóng góp
+          filtered.sort((a, b) => b.contribution - a.contribution);
+
+          // Nếu topFilter là "all", không giới hạn
+          const topParticipants = topFilter === "all"
+              ? filtered
+              : filtered.slice(0, parseInt(topFilter));
+
+          // Hiển thị kết quả
+          rows.forEach(row => row.style.display = "none");
+          topParticipants.forEach(p => p.element.style.display = "table-row");
+      }
+
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .sidebar {
+      width: 250px;
+      height: 100vh;
+      background-color: #2c3e50;
+      color: white;
+      position: fixed;
+      padding-top: 20px;
+    }
+    .sidebar .admin-info {
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+      background-color: #34495e;
+    }
+    .sidebar button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      text-align: left;
+      border: none;
+      background: none;
+      color: white;
+      cursor: pointer;
+    }
+    .sidebar button:hover {
+      background-color: #34495e;
+    }
+    .content {
+      margin-left: 250px;
+      padding: 20px;
+    }
+    .notification-detail {
+      background: white;
+      padding: 15px;
+      margin-top: 10px;
+      border-radius: 5px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .event-image {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      margin: 10px 0;
+    }
+    .btn {
+      padding: 5px 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    select {
+      margin: 5px;
+      padding: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .filter-section {
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="admin-info">Quản trị - group1</div>
+    <button onclick="window.location.href='{% url 'profile' %}'">Thông tin cá nhân</button>
+    <button onclick="window.location.href='{% url 'member' %}'">Quản lý thành viên</button>
+    <button onclick="window.location.href='{% url 'event_detail' %}'">Quản lý sự kiện</button>  
+    <button onclick="window.location.href='{% url 'money' %}'">Nạp/Rút tiền</button>
+    <button onclick="window.location.href='{% url 'noti' %}'">Thông báo</button>
+    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+  </div>
+
+  <div class="content">
+    <h2>Danh sách thành viên nhóm</h2>
+
+    <div class="filter-section">
+        <label>Sắp xếp theo vai trò:</label>
+        <select id="roleFilter" onchange="filterMembers()">
+            <option value="all">Tất cả</option>
+            <option value="admin">Admin</option>
+            <option value="member">Thành viên</option>
+        </select>
+    </div>
+
+    <div class="member-list">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tên thành viên</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Trường học</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for member in members %}
+                <tr class="member-row" data-role="{{ member.role }}">
+                    <td>{{ member.full_name }}</td>
+                    <td>{{ member.email }}</td>
+                    <td>{{ member.role }}</td>
+                    <td>{{ member.id_school.name }}</td>
+                    <td>
+                        <button onclick="editMember({{ member.id }})" class="btn-primary">Sửa</button>
+                        <button onclick="deleteMember({{ member.id }})" class="btn-danger">Xóa</button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">Không có thành viên nào.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+  </div>
+
+  <script>
+      // Hàm lọc thành viên theo vai trò
+      function filterMembers() {
+          const roleFilter = document.getElementById("roleFilter").value;
+          const rows = document.querySelectorAll(".member-row");
+
+          rows.forEach(row => {
+              const role = row.dataset.role;
+              if (roleFilter === "all" || role === roleFilter) {
+                  row.style.display = "table-row";
+              } else {
+                  row.style.display = "none";
+              }
+          });
+      }
+
+      // Hàm sửa thành viên
+      function editMember(memberId) {
+          // Redirect to the edit member page
+          window.location.href = `/edit-member/${memberId}/`;
+      }
+
+      // Hàm xóa thành viên
+      function deleteMember(memberId) {
+          if (confirm("Bạn có chắc muốn xóa thành viên này?")) {
+              fetch(`/delete-member/${memberId}/`, {
+                  method: 'DELETE',
+                  headers: {
+                      'X-CSRFToken': getCookie('csrftoken')
+                  },
+              })
+              .then(response => {
+                  if (response.ok) {
+                      alert('Đã xóa thành viên');
+                      location.reload();  // Tải lại trang để cập nhật danh sách
+                  } else {
+                      alert('Có lỗi xảy ra khi xóa thành viên');
+                  }
+              })
+              .catch(error => {
+                  console.error('Lỗi:', error);
+              });
+          }
+      }
+
+      // Hàm lấy cookie csrf
+      function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              const cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                  const cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+  </script>
+
+</body>
+</html>

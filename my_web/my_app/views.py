@@ -709,8 +709,13 @@ def edit_event(request):
 def money_view(request):
     return render(request, 'group/money.html')
 
-def add_mem_view(request):
-    return render(request, 'group/add_mem.html')
+def member_view(request):
+    group = get_object_or_404(GroupInfo, id_group=request.user.id)
+    
+    # Lấy các thành viên của nhóm thông qua GroupUser
+    members = Users.objects.filter(groupuser__id_group=group)
+
+    return render(request, 'group/member.html', {'members': members})
 
 def group_dashboard(request):
     if request.user.is_authenticated:
@@ -743,13 +748,14 @@ def group_dashboard(request):
 
 
 def profile_view(request):
-    user = Users.objects.get(username=request.user.username)
-
-    group_ids = GroupUser.objects.filter(id_user=user).values_list('id_group', flat=True)
-    admins = Users.objects.filter(groupuser__id_group__in=group_ids, role='quản trị viên').distinct()
-
+    group_info = get_object_or_404(GroupInfo, id_group=request.user.id)
+    admins = Users.objects.filter(
+        id_user__in=GroupUser.objects.filter(id_group=group_info).exclude(id_user=request.user.id).values('id_user').distinct(),
+        role='quản trị viên'
+    )
+    group = Users.objects.get(username=request.user.username)
     context = {
-        'user': user,
+        'user': group,
         'admins': admins,
     }
 
