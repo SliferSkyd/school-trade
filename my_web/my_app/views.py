@@ -9,7 +9,7 @@ from django.db.models.functions import ExtractMonth
 from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib import messages
 from django.utils import timezone
-
+from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 
 THRESHOLD_REPORT = 20
@@ -384,7 +384,22 @@ def add_member(request):
                 )
                 print(f"✅ Nhóm '{group.name}' đã được tạo và gán user '{user}' làm quản trị viên.")
 
+                        # Tạo tài khoản ngân hàng ngẫu nhiên
+                account_id = generate_account_id()
 
+                # Kiểm tra tài khoản ngân hàng có trùng không, nếu trùng thì sinh lại
+                while is_account_id_exists(account_id):
+                    account_id = generate_account_id()
+
+                # Tạo tài khoản ngân hàng cho người dùng
+                Accounts.objects.create(
+                    user=user,
+                    account_id=account_id,
+                    balance=0.0,  # Số dư ban đầu là 0
+                    account_type='checking',  # Loại tài khoản
+                    status='active',  # Tình trạng tài khoản
+                    created_at=timezone.now()
+                )
                         
             if not AuthUser.objects.filter(username=username).exists():
                 AuthUser.objects.create(
@@ -1238,3 +1253,128 @@ def approve_order(request, offer_id):
             return JsonResponse({'success': False, 'message': 'Đơn hàng không tồn tại'})
 
     return JsonResponse({'success': False, 'message': 'Yêu cầu không hợp lệ'})
+
+
+
+
+
+def bibi_home_view(request):
+    return render(request, 'bibi/home.html')
+
+
+def bibi_login_view(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('bibi_dashboard')
+        else:
+            messages.error(request, 'Tên đăng nhập hoặc mật khẩu không chính xác.')
+
+    return render(request, 'bibi/login.html')
+
+
+def bibi_dashboard(request):
+    try:
+        user_obj = Users.objects.get(username=request.user.username)
+        accounts = Accounts.objects.filter(user=user_obj)
+        return render(request, 'bibi/dashboard.html', {'user': user_obj, 'accounts': accounts})
+    except Users.DoesNotExist:
+        messages.error(request, 'Không tìm thấy thông tin người dùng.')
+        return redirect('logout')
+
+
+def bibi_transfer(request):
+    try:
+        user_obj = Users.objects.get(username=request.user.username)
+    except Users.DoesNotExist:
+        messages.error(request, 'Không tìm thấy thông tin người dùng.')
+        return redirect('logout')
+
+    if request.method == 'POST':
+        from_account_id = request.POST['from_account_id']
+        to_account_id = request.POST['to_account_id']
+        from decimal import Decimal
+        amount = Decimal(request.POST['amount'])
+        content = request.POST['content']
+
+        try:
+            from_account = Accounts.objects.get(account_id=from_account_id, user=user_obj)
+            to_account = Accounts.objects.get(account_id=to_account_id)
+
+            if from_account.balance >= amount:
+                # Cập nhật số dư
+                from_account.balance -= amount
+                from_account.save()
+
+                to_account.balance += amount
+                to_account.save()
+
+                # Lưu giao dịch
+                Transactions.objects.create(
+                    from_account=from_account,
+                    to_account=to_account,
+                    amount=amount,
+                    transaction_type="transfer",
+                    transaction_date=timezone.now(),
+                    status="completed",
+                    content=content
+                )
+
+                # Tạo thông báo
+                Notification.objects.create(
+                    user=user_obj,
+                    message=f"Chuyển tiền thành công từ tài khoản {from_account.account_id} đến {to_account.account_id}. Số tiền: {amount} VNĐ"
+                )
+
+                messages.success(request, 'Chuyển tiền thành công!')
+            else:
+                messages.error(request, 'Số dư không đủ để thực hiện giao dịch.')
+
+        except Accounts.DoesNotExist:
+            messages.error(request, 'Tài khoản không tồn tại hoặc không thuộc quyền sở hữu.')
+
+    accounts = Accounts.objects.filter(user=user_obj)
+    return render(request, 'bibi/transfer.html', {'accounts': accounts})
+
+
+def bibi_balance_activity(request):
+    try:
+        user_obj = Users.objects.get(username=request.user.username)
+        account_list = Accounts.objects.filter(user=user_obj)
+        if not account_list.exists():
+            messages.error(request, 'Không có tài khoản nào được liên kết.')
+            return redirect('bibi_dashboard')
+
+        # Lấy tất cả giao dịch liên quan đến tài khoản của người dùng
+        transactions = Transactions.objects.filter(
+            Q(from_account__in=account_list) | Q(to_account__in=account_list)
+        ).order_by('-transaction_date')
+
+        return render(request, 'bibi/balance_activity.html', {
+            'transactions': transactions,
+            'accounts': account_list
+        })
+
+    except Users.DoesNotExist:
+        messages.error(request, 'Không tìm thấy thông tin người dùng.')
+        return redirect('logout')
+
+def bibi_logout_view(request):
+    logout(request)
+    return redirect('bibi/home')
+
+import random
+import string
+
+# Hàm tạo tài khoản ngân hàng ngẫu nhiên (4 chữ số)
+def generate_account_id():
+    # Sinh ra một số tài khoản ngẫu nhiên 4 chữ số
+    return ''.join(random.choices(string.digits, k=4))
+
+# Hàm kiểm tra tài khoản ngân hàng có trùng không
+def is_account_id_exists(account_id):
+    return Accounts.objects.filter(account_id=account_id).exists()

@@ -69,4 +69,12 @@ urlpatterns = [
 
     path('events_u/approve_participant/<int:participate_form_id>/<str:action>/', approve_participant, name='approve_participant'),
 
+
+    path('bibi/', bibi_home_view, name='bibi_home'),
+    path('bibi/login/', bibi_login_view, name='bibi_login'),
+    path('bibi/logout/', bibi_logout_view, name='bibi_logout'),
+    path('bibi/dashboard/', bibi_dashboard, name='bibi_dashboard'),
+    path('bibi/transfer/', bibi_transfer, name='bibi_transfer'),
+    path('bibi/activity/', bibi_balance_activity, name='bibi_balance_activity'),
+
 ]

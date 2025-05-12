@@ -331,3 +331,15 @@ class Vote(models.Model):
     class Meta:
         managed = True
         db_table = 'vote'
+
+class Accounts(models.Model):
+    account_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(Users, models.DO_NOTHING, blank=True, null=True)  # ForeignKey from myapp's Users model
+    balance = models.DecimalField(max_digits=15, decimal_places=2, blank=True, null=True)
+    account_type = models.CharField(max_length=50, blank=True, null=True)
+    status = models.CharField(max_length=50, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        managed = True
+        db_table = 'accounts'
