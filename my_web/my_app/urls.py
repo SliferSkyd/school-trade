@@ -60,8 +60,9 @@ urlpatterns = [
     path('posts_u/add/', add_post, name='add_post'),
     path('posts_u/', post_list, name='post_list'),
     path('events_u/', event_list, name='event_list'),
+    path('events_list_group/', event_list_group, name='event_list_group'),
     # urls.py
-    path('events/create/', create_event, name='create_event'),
+    #path('events/create/', create_event, name='create_event'),
 
     path('groups_u/', group_list, name='group_list'),
     path('profile_u/', profile_view_u, name='profile_u'),

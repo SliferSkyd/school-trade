@@ -894,6 +894,11 @@ def event_list(request):
     events = Event.objects.filter(status="Đã duyệt")
     return render(request, 'user_/event.html', {'events': events})
 
+def event_list_group(request):
+    group_info = get_object_or_404(GroupInfo, id_group=request.user.id)
+    events = Event.objects.filter(id_group=group_info, status="Đã duyệt")
+    return render(request, 'group/event_list.html', {'events': events, 'group_id': request.user.id})
+
 def group_list(request):
     groups = GroupInfo.objects.all()
     return render(request, 'user_/group.html', {'groups': groups})
@@ -1626,17 +1631,23 @@ from django.core.files.storage import FileSystemStorage
 
 def create_event(request, group_id):
     if request.method == 'POST':
-        # Lấy các dữ liệu từ form
-        event_name = request.POST.get('name')
-        start_time = request.POST.get('start_time')
-        end_time = request.POST.get('end_time')
-        event_type = request.POST.get('event_type')
-        location = request.POST.get('location')
-        acc = request.POST.get('acc')
-        description = request.POST.get('description')
+        group_id = GroupInfo.objects.get(id_group=group_id)
+        
+        data = json.loads(request.body)
+            
+        print(data)
+        
+        # Extract values from the parsed data
+        event_name = data.get('name')
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        event_type = data.get('event_type')
+        location = data.get('location')
+        acc = data.get('acc')
+        description = data.get('description')
 
         # Xử lý file ảnh nếu có
-        poster = request.FILES.get('poster')  # Nhận tệp ảnh từ form
+        poster = data.get('poster')  # Nhận tệp ảnh từ form
         if poster:
             fs = FileSystemStorage()
             filename = fs.save(poster.name, poster)
@@ -1657,7 +1668,7 @@ def create_event(request, group_id):
             status="Chưa duyệt",
             poster=poster_url
         )
-    return redirect('event_detail', event_id=new_event.id)
+    return JsonResponse({'success': True, 'message': 'Tạo sự kiện thành công!'})
 
 
 from django.http import JsonResponse
@@ -1676,7 +1687,7 @@ def report_post(request):
             post = Post.objects.get(id_post=post_id)
         
             # Create a notification for the post owner that their post has been reported
-            notification_content = f"Bài đăng '{post.title}' của bạn đã bị báo cáo."
+            notification_content = f"Bài đăng '{post.title}' của bạn đã bị báo cáo. Lý do: {message}"
             Notification.objects.create(
                 content=notification_content,
                 title="Báo cáo bài đăng",

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản lý Sự Kiện</title>
+  <script>
+    function filterEvents() {
+        const participantsFilter = document.getElementById("participantsFilter").value;
+        const donatedAmountFilter = document.getElementById("donatedAmountFilter").value;
+        const topFilter = document.getElementById("topFilter").value;
+        const rows = document.querySelectorAll(".event-row");
+
+        const events = Array.from(rows).map(row => ({
+            element: row,
+            participants: parseInt(row.dataset.participants),
+            donatedAmount: parseInt(row.dataset.donatedAmount),
+        }));
+
+        // Filter events based on selected filters
+        const filtered = events.filter(e => {
+            const matchParticipants = participantsFilter === "all" || e.participants >= parseInt(participantsFilter);
+            const matchDonatedAmount = donatedAmountFilter === "all" || e.donatedAmount >= parseInt(donatedAmountFilter);
+            return matchParticipants && matchDonatedAmount;
+        });
+
+        // Sort by the selected criteria (donated amount or number of participants)
+        filtered.sort((a, b) => b.donatedAmount - a.donatedAmount); // Sort by total donated amount descending
+
+        // If "Top" filter is selected, show only the top N events
+        const topParticipants = topFilter === "all"
+            ? filtered
+            : filtered.slice(0, parseInt(topFilter));
+
+        // Show filtered events
+        rows.forEach(row => row.style.display = "none");
+        topParticipants.forEach(e => e.element.style.display = "table-row");
+    }
+
+    function formatDatetime(datetime) {
+      const date = new Date(datetime);
+      return date.toISOString().slice(0, 19).replace('T', ' ');  // Convert to YYYY-MM-DD HH:MM:SS
+  }
+
+    function handleEventCreation(formData) {
+        event.preventDefault();
+        const group_id = "{{ group_id }}";
+
+         const data = {
+            name: document.getElementById("name").value,
+            start_time: formatDatetime(document.getElementById("start_time").value),
+            end_time: formatDatetime(document.getElementById("end_time").value),
+            event_type: document.getElementById("event_type").value,
+            location: document.getElementById("location").value,
+            acc: document.getElementById("acc").value,
+            description: document.getElementById("description").value,
+            poster: document.getElementById("poster").files[0], // Assuming the file input
+        };
+        console.log(data);
+
+        fetch(`/events/create/${group_id}/`, {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')  // Ensure CSRF token is included
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("Sự kiện đã được tạo thành công!");
+                // location.reload();  // Reload the page to reflect the new event
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+
+    // Utility function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+    .sidebar {
+      width: 250px;
+      height: 100vh;
+      background-color: #2c3e50;
+      color: white;
+      position: fixed;
+      padding-top: 20px;
+    }
+    .sidebar .admin-info {
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+      background-color: #34495e;
+    }
+    .sidebar button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      text-align: left;
+      border: none;
+      background: none;
+      color: white;
+      cursor: pointer;
+    }
+    .sidebar button:hover {
+      background-color: #34495e;
+    }
+    .content {
+      margin-left: 250px;
+      padding: 20px;
+    }
+    .event-image {
+      width: 100%;
+      max-width: 400px;
+      height: auto;
+      margin: 10px 0;
+    }
+    .btn {
+      padding: 5px 10px;
+      margin: 5px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    select {
+      margin: 5px;
+      padding: 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table, th, td {
+      border: 1px solid #ddd;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .filter-section {
+      margin-bottom: 10px;
+    }
+
+    .create-event-btn {
+        background-color: #3498db;
+        color: white;
+        font-size: 16px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .create-event-btn:hover {
+        background-color: #2980b9;
+    }
+
+    .create-event-btn:active {
+        background-color: #1f6a8d;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="admin-info">Hội nhóm</div>
+    <button onclick="window.location.href='{% url 'profile' %}'">Thông tin cá nhân</button>
+    <button onclick="window.location.href='{% url 'member' %}'">Quản lý thành viên</button>
+    <button onclick="window.location.href='{% url 'event_list_group' %}'">Quản lý sự kiện</button> 
+    <button onclick="window.location.href='{% url 'event_detail' %}'">Thành viên tham gia</button>
+    <button onclick="window.location.href='{% url 'money' %}'">Nạp/Rút tiền</button>
+    <button onclick="window.location.href='{% url 'noti' %}'">Thông báo</button>
+    <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
+  </div>
+
+  <div class="content">
+    <h2>Danh sách sự kiện</h2>
+
+    <div class="filter-section">
+      <label>Số người tham dự tối thiểu:</label>
+      <select id="participantsFilter" onchange="filterEvents()">
+        <option value="all">Tất cả</option>
+        <option value="5">Tối thiểu 5 người</option>
+        <option value="10">Tối thiểu 10 người</option>
+        <option value="20">Tối thiểu 20 người</option>
+      </select>
+
+      <label>Số tiền quyên góp tối thiểu:</label>
+      <select id="donatedAmountFilter" onchange="filterEvents()">
+        <option value="all">Tất cả</option>
+        <option value="100000">Tối thiểu 100,000 VND</option>
+        <option value="500000">Tối thiểu 500,000 VND</option>
+        <option value="1000000">Tối thiểu 1,000,000 VND</option>
+      </select>
+
+      <label>Top:</label>
+      <select id="topFilter" onchange="filterEvents()">
+        <option value="all">Tất cả</option>
+        <option value="5">Top 5</option>
+        <option value="3">Top 3</option>
+        <option value="1">Top 1</option>
+      </select>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Sự kiện</th>
+          <th>Loại sự kiện</th>
+          <th>Địa điểm</th>
+          <th>Số người tham gia</th>
+          <th>Số tiền quyên góp</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+          <tr class="event-row"
+              data-participants="{{ event.number_of_participants }}"
+              data-donatedAmount="{{ event.donated_amount }}">
+            <td>{{ event.name }}</td>
+            <td>{{ event.type }}</td>
+            <td>{{ event.location }}</td>
+            <td>{{ event.number_of_participants }}</td>
+            <td>{{ event.donated_amount|floatformat:0 }} VND</td>
+            <td><button class="btn btn-primary">Xem chi tiết</button></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <button onclick="openModal()" class="btn create-event-btn">Tạo sự kiện</button>
+
+    <!-- Modal -->
+    <div id="createEventModal" class="modal" style="display:none;">
+      <div class="content">
+        <h2>Tạo sự kiện mới</h2>
+        <div class="form-section">
+          <form method="POST" enctype="multipart/form-data" onsubmit="handleEventCreation(this)">
+            {% csrf_token %}
+
+            <label for="name">Tên sự kiện:</label>
+            <input type="text" id="name" name="name" required>
+
+            <label for="start_time">Thời gian bắt đầu:</label>
+            <input type="datetime-local" id="start_time" name="start_time" required>
+
+            <label for="end_time">Thời gian kết thúc:</label>
+            <input type="datetime-local" id="end_time" name="end_time" required>
+
+            <label for="event_type">Loại sự kiện:</label>
+            <select id="event_type" name="event_type" required>
+              <option value="Gây quỹ">Gây quỹ</option>
+              <option value="Quyên góp">Quyên góp</option>
+            </select>
+
+            <label for="location">Địa điểm:</label>
+            <input type="text" id="location" name="location" required>
+
+            <label for="acc">Số tài khoản:</label>
+            <input type="number" id="acc" name="acc" required>
+
+            <label for="poster">Ảnh sự kiện:</label>
+            <input type="file" id="poster" name="poster">
+
+            <label for="description">Nội dung sự kiện:</label>
+            <textarea id="description" name="description" rows="5" required></textarea>
+
+            <button type="submit" class="btn">Tạo sự kiện</button>
+          </form>
+        </div>
+
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Mở modal
+    function openModal() {
+      document.getElementById('createEventModal').style.display = 'block';
+    }
+
+    // Đóng modal
+    function closeModal() {
+      document.getElementById('createEventModal').style.display = 'none';
+    }
+
+    // Đóng modal nếu người dùng click ra ngoài
+    window.onclick = function(event) {
+      if (event.target == document.getElementById('createEventModal')) {
+        closeModal();
+      }
+    }
+  </script>
+
+</body>
+</html>
