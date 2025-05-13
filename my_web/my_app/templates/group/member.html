@@ -118,7 +118,7 @@
 </head>
 <body>
   <div class="sidebar">
-    <div class="admin-info">Quản trị - group1</div>
+    <div class="admin-info">Hội nhóm</div>
     <button onclick="window.location.href='{% url 'profile' %}'">Thông tin cá nhân</button>
     <button onclick="window.location.href='{% url 'member' %}'">Quản lý thành viên</button>
     <button onclick="window.location.href='{% url 'event_detail' %}'">Quản lý sự kiện</button>  
@@ -145,7 +145,6 @@
                 <tr>
                     <th>Tên thành viên</th>
                     <th>Email</th>
-                    <th>Vai trò</th>
                     <th>Trường học</th>
                     <th>Thao tác</th>
                 </tr>
@@ -155,7 +154,7 @@
                 <tr class="member-row" data-role="{{ member.role }}">
                     <td>{{ member.full_name }}</td>
                     <td>{{ member.email }}</td>
-                    <td>{{ member.role }}</td>
+                  
                     <td>{{ member.id_school.name }}</td>
                     <td>
                         <button onclick="editMember({{ member.id }})" class="btn-primary">Sửa</button>

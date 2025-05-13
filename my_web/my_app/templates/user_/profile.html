@@ -62,7 +62,7 @@
         </div>
     </div>
 
-    <div class="section">
+<div class="section">
         <h3>Bài đăng đã mua/trao đổi thành công</h3>
         <div class="posts">
             {% for offer in completed_offers %}
@@ -81,59 +81,122 @@
                 {% endif %}
 
                 {% if offer.status == "Đã duyệt" %}
-                    <button class="btn-primary" data-type="post" data-id="{{ offer.id_post.id }}">Xem chi tiết</button>
+                    <button class="btn-primary" data-type="post" data-id="{{ offer.id_post.id_post }}">Xem chi tiết</button>
                 {% else %}
                     <button class="btn-primary" disabled>Đã đóng</button>
                 {% endif %}
+
+                <!-- Rating System -->
+                <div class="rating-container" data-id="{{ offer.id_post.id_post }}">
+                    <label>Đánh giá bài đăng:</label>
+                    <div class="star-rating" data-id="{{ offer.id_post.id_post }}">
+                        <span class="star" data-rating="1">&#9733;</span>
+                        <span class="star" data-rating="2">&#9733;</span>
+                        <span class="star" data-rating="3">&#9733;</span>
+                        <span class="star" data-rating="4">&#9733;</span>
+                        <span class="star" data-rating="5">&#9733;</span>
+                    </div>
+                    <p id="rating-feedback-{{ offer.id_post.id_post }}"></p>
+                </div>
             </div>
             {% empty %}
                 <p>Chưa mua hoặc trao đổi bài đăng nào.</p>
             {% endfor %}
         </div>
     </div>
-
-    <div class="section">
-        <h3>Thống kê theo tháng</h3>
-        <canvas id="statChart" width="400" height="200"></canvas>
-    </div>
 </div>
 {% endblock %}
 
 {% block script %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    const ctx = document.getElementById('statChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: {{ month_labels|safe }},
-            datasets: [
-                {
-                    label: 'Sản phẩm mua',
-                    data: {{ mua_data|safe }},
-                    backgroundColor: '#3498db'
+   
+    document.querySelectorAll('.star').forEach(star => {
+        star.addEventListener('click', function() {
+            const rating = this.dataset.rating;
+            const postId = this.closest('.rating-container').dataset.id;
+            
+            console.log(`Rating for post ${postId}: ${rating}`);
+
+            // Send the rating to the server
+            fetch(`/rate_post/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')  // Include CSRF token
                 },
-                {
-                    label: 'Sản phẩm trao đổi',
-                    data: {{ trao_doi_data|safe }},
-                    backgroundColor: '#2ecc71'
-                },
-                {
-                    label: 'Sự kiện tham gia',
-                    data: {{ su_kien_data|safe }},
-                    backgroundColor: '#e74c3c'
+                body: JSON.stringify({
+                    post_id: postId,
+                    rating: rating
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the UI with the feedback
+                    document.getElementById('rating-feedback-' + postId).innerText = 'Cảm ơn bạn đã đánh giá!';
+                    // Disable all stars after rating is given
+                    document.querySelectorAll('.star-rating[data-id="' + postId + '"] .star').forEach(star => {
+                        star.style.pointerEvents = 'none'; // Disable further interaction
+                    });
+                } else {
+                    alert(data.message || "Có lỗi xảy ra khi đánh giá bài đăng.");
                 }
-            ]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    precision: 0
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Có lỗi xảy ra khi đánh giá bài đăng.");
+            });
+        });
+    });
+
+    // Function to retrieve CSRF token from cookies
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
                 }
             }
         }
-    });
+        return cookieValue;
+    }
 </script>
+{% endblock %}
+
+{% block css %}
+<style>
+    .star-rating {
+        display: flex;
+        cursor: pointer;
+        font-size: 30px;
+        color: #ccc;
+    }
+
+    .star-rating .star {
+        margin-right: 5px;
+        transition: color 0.2s;
+    }
+
+    /* Hover effect */
+    .star-rating .star:hover,
+    .star-rating .star:hover ~ .star {
+        color: #f39c12; /* Gold color on hover */
+    }
+
+    /* When rating is selected, show the selected stars in gold */
+    .star-rating .star.selected {
+        color: #f39c12; /* Gold color for selected stars */
+    }
+
+    /* Disable stars after rating */
+    .star-rating .star:disabled {
+        color: #bdc3c7; /* Gray color for disabled stars */
+        pointer-events: none;
+    }
+
+</style>
 {% endblock %}

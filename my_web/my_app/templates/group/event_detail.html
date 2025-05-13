@@ -153,12 +153,30 @@
     }
     .filter-section {
       margin-bottom: 10px;
-    }
+    }.create-event-btn {
+  background-color: #3498db; /* Màu nền */
+  color: white; /* Màu chữ */
+  font-size: 16px; /* Kích thước chữ */
+  padding: 10px 20px; /* Padding xung quanh */
+  border: none; /* Không có viền */
+  border-radius: 5px; /* Bo tròn góc */
+  cursor: pointer; /* Thay đổi con trỏ khi hover */
+  transition: background-color 0.3s ease; /* Thêm hiệu ứng khi di chuột */
+}
+
+.create-event-btn:hover {
+  background-color: #2980b9; /* Màu nền khi hover */
+}
+
+.create-event-btn:active {
+  background-color: #1f6a8d; /* Màu nền khi nhấn */
+}
+
   </style>
 </head>
 <body>
   <div class="sidebar">
-    <div class="admin-info">Quản trị - group1</div>
+    <div class="admin-info">Hội nhóm</div>
     <button onclick="window.location.href='{% url 'profile' %}'">Thông tin cá nhân</button>
     <button onclick="window.location.href='{% url 'member' %}'">Quản lý thành viên</button>
     <button onclick="window.location.href='{% url 'event_detail' %}'">Quản lý sự kiện</button>  
@@ -191,6 +209,7 @@
     <table>
       <thead>
         <tr>
+          <th>Sự kiện</th>
           <th>Tên người tham gia</th>
           <th>Tham gia</th>
           <th>Số tiền/Đóng góp</th>
@@ -201,22 +220,101 @@
       <tbody>
         {% for event in events %}
           {% for participant in event.participants %}
-          <tr class="participant-row" 
-              data-school="{{ participant.school }}" 
-              data-contribution="{{ participant.contribution }}">
-            <td>{{ participant.name }}</td>
-            <td>{{ participant.date }}</td>
-            <td>{{ participant.contribution|floatformat:0 }} VND</td>
-            <td>{{ participant.school }}</td>
-            <td>
-              <button class="btn btn-success" onclick="handleApproval('{{ participant.id_participate_form }}', 'approve')">Đồng ý</button>
-              <button class="btn btn-danger" onclick="handleApproval('{{ participant.id_participate_form }}', 'reject')">Từ chối</button>
-            </td>
-          </tr>
+            <tr class="participant-row" 
+                data-school="{{ participant.school }}" 
+                data-contribution="{{ participant.contribution }}">
+              <td>{{participant.name_event}}</td>
+              <td>{{ participant.name }}</td>
+              <td>{{ participant.date }}</td>
+              <td>{{ participant.contribution|floatformat:0 }} VND</td>
+              <td>{{ participant.school }}</td>
+              <td>
+                {% if participant.status_form == "Chưa duyệt" %}
+                  <button class="btn btn-success" onclick="handleApproval('{{ participant.id_participate_form }}', 'approve')">Đồng ý</button>
+                  <button class="btn btn-danger" onclick="handleApproval('{{ participant.id_participate_form }}', 'reject')">Từ chối</button>
+                {% else %}
+                  <button class="btn btn-success" >
+                    {{ participant.status_form }}
+                  </button>
+                {% endif %}
+              </td>
+            </tr>
           {% endfor %}
         {% endfor %}
+
       </tbody>
     </table>
+
+    <!-- Nút để mở modal -->
+<button onclick="openModal()" class="btn btn-primary">Tạo sự kiện</button>
+
+<!-- Modal -->
+<div id="createEventModal" class="modal" style="display:none;">
+  <div class="content">
+    <h2>Tạo sự kiện mới</h2>
+    <div class="form-section">
+      <form method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <label for="name">Tên sự kiện:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="start_time">Thời gian bắt đầu:</label>
+        <input type="datetime-local" id="start_time" name="start_time" required>
+
+        <label for="end_time">Thời gian kết thúc:</label>
+        <input type="datetime-local" id="end_time" name="end_time" required>
+
+        <label for="event_type">Loại sự kiện:</label>
+        <select id="event_type" name="event_type" required>
+          <option value="">--Chọn loại--</option>
+          <option value="Gây quỹ">Gây quỹ</option>
+          <option value="Quyên góp">Quyên góp</option>
+        </select>
+
+        <label for="location">Địa điểm:</label>
+        <input type="text" id="location" name="location" required>
+
+        <label for="acc">Số tài khoản:</label>
+        <input type="number" id="acc" name="acc" required>
+
+        <label for="poster">Ảnh sự kiện:</label>
+        <input type="file" id="poster" name="poster">
+
+        <label for="description">Nội dung sự kiện:</label>
+        <textarea id="description" name="description" rows="5" required></textarea>
+
+        <button type="submit" class="btn">Tạo sự kiện</button>
+      </form>
+    </div>
+
+    <!-- Nút đóng modal -->
+    <span class="close-btn" onclick="closeModal()">&times;</span>
   </div>
-</body>
-</html>
+</div>
+
+<!-- Thêm đoạn mã HTML cho nút mở Modal -->
+<!-- Nút để mở modal -->
+<button onclick="openModal()" class="btn create-event-btn">Tạo sự kiện</button>
+
+
+<script>
+  // Mở modal
+  function openModal() {
+    document.getElementById('createEventModal').style.display = 'block';
+  }
+
+  // Đóng modal
+  function closeModal() {
+    document.getElementById('createEventModal').style.display = 'none';
+  }
+
+  // Đóng modal nếu người dùng click ra ngoài
+  window.onclick = function(event) {
+    if (event.target == document.getElementById('createEventModal')) {
+      closeModal();
+    }
+  }
+</script>
+
+</style>

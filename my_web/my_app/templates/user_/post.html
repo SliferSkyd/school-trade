@@ -28,7 +28,7 @@
              data-category="{{ post.id_category.name }}"
              data-id="{{ post.id_post }}"
              data-user="{{ post.id_user.id }}">
-            <img src="https://i.pinimg.com/736x/c3/de/c5/c3dec50c8063a844e0d960463ee620b9.jpg" alt="Ảnh bài đăng" />
+            <img src="{{ post.product_image }}" alt="Ảnh bài đăng" />
             <h4>{{ post.title }}</h4>
             <p>Người đăng: {{ post.id_user.full_name }}</p>
             <p>Loại bài: {{ post.type_post|title }}</p>
@@ -50,10 +50,14 @@
                 </div>
             {% endif %}
             
-             
             <!-- Show "Giao dịch" button only for posts that do not belong to the current user -->
             {% if post.id_user.id_user != user.id_user %}
                 <button class="btn-primary transaction-button" data-id="{{ post.id_post }}">Giao dịch</button>
+            {% endif %}
+
+            <!-- Report Button -->
+            {% if post.id_user.id_user != user.id_user %}
+                <button class="btn btn-warning report-button" data-id="{{ post.id_post }}">Báo cáo</button>
             {% endif %}
         </div>
     {% empty %}
@@ -89,12 +93,16 @@
     document.querySelectorAll('.transaction-button').forEach(button => {
         button.addEventListener('click', function() {
             const postId = this.dataset.id;
-            const userId = {{ request.user.id }};  // Assuming you want to pass user id
+            const userId = {{ request.user.id }};
             const postCard = this.closest('.post-card');
             const postType = postCard.dataset.type;
             
-            // Handle exchange-specific data
-            const exchangeItemInfo = document.getElementById('exchange-item-info-' + postId)?.value;
+            // If it's an exchange post, show the form for entering exchange item info
+            const exchangeItemForm = postCard.querySelector('.exchange-item-info-form'); // Adjusting the form selector
+
+            if (postType === 'trao đổi' && exchangeItemForm) {
+                exchangeItemForm.style.display = 'block'; // Make sure the form exists
+            }
 
             // Hide the post after transaction initiation
             postCard.style.display = "none";
@@ -102,8 +110,9 @@
             // Send the request to create a TradingOffer instance
             let additionalData = {};
 
-            // Only send exchange item info if it's an exchange post
-            if (postType === 'trao đổi' && exchangeItemInfo) {
+            // Handle exchange-specific data
+            if (postType === 'trao đổi') {
+                const exchangeItemInfo = postCard.querySelector(`#exchange-item-info-${postId}`).value;
                 additionalData = { exchange_item_info: exchangeItemInfo };
             }
 
@@ -111,12 +120,12 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')  // Include CSRF token
+                    'X-CSRFToken': getCookie('csrftoken')
                 },
                 body: JSON.stringify({
                     post_id: postId,
                     buyer_id: userId,
-                    ...additionalData // Include exchange item info for exchange posts
+                    ...additionalData
                 })
             })
             .then(response => response.json())
@@ -131,6 +140,46 @@
                 console.error('Error:', error);
                 alert("Có lỗi xảy ra. Vui lòng thử lại.");
             });
+        });
+    });
+
+    // Handle "Báo cáo" button click
+    document.querySelectorAll('.report-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.dataset.id;
+            
+            // Prompt the user for a report message
+            const reportMessage = prompt("Vui lòng nhập lý do báo cáo:");
+
+            if (reportMessage) {
+                // Send the report to the server
+                fetch(`/posts_u/report_post/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        post_id: postId,
+                        message: reportMessage
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Đã gửi báo cáo thành công!");
+                        // Change the button text to "Đã báo cáo" and disable it
+                        this.textContent = "Đã báo cáo";
+                        this.disabled = true;
+                    } else {
+                        alert("Có lỗi xảy ra khi báo cáo bài đăng.");
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("Có lỗi xảy ra. Vui lòng thử lại.");
+                });
+            }
         });
     });
 

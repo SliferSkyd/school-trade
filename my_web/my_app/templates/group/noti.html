@@ -59,7 +59,7 @@
 </head>
 <body>
   <div class="sidebar">
-    <div class="admin-info">Quản trị - group1</div>
+    <div class="admin-info">Hội nhóm</div>
     
     <button onclick="window.location.href='{% url 'profile' %}'">Thông tin cá nhân</button>
     <button onclick="window.location.href='{% url 'member' %}'">Quản lý thành viên</button>
@@ -72,20 +72,34 @@
   <div class="content">
     <h2>Thông báo</h2>
 
-    {% for notification in notifications %}
-      <div class="notification-card {% if notification.status == 'unread' %}unread{% endif %}">
-        <h4>{{ notification.title }}</h4>
-        <p><small>{{ notification.date }}</small></p>
-        <p>{{ notification.content }}</p>
-        {% if notification.status == 'unread' %}
-          <p style="color: #e74c3c;">Chưa đọc</p>
-        {% else %}
-          <p style="color: #2ecc71;">Đã đọc</p>
-        {% endif %}
-      </div>
-    {% empty %}
-      <p>Không có thông báo nào.</p>
-    {% endfor %}
-  </div>
+    <div class="notification-card">
+        <h4>Sự kiện mẫu 1 đã được duyệt</h4>
+        <p><small>Ngày: 2025-05-10</small></p>
+        <p>Sự kiện này đã được duyệt và sẽ diễn ra vào thời gian đã đăng ký.</p>
+        <p style="color: #2ecc71;">Đã đọc</p>
+    </div>
+
+    <div class="notification-card">
+        <h4>Sự kiện mẫu 2 đã được duyệt</h4>
+        <p><small>Ngày: 2025-05-10</small></p>
+        <p>Sự kiện này đã được duyệt và sẽ diễn ra vào thời gian đã đăng ký.</p>
+        <p style="color: #2ecc71;">Đã đọc</p>
+    </div>
+
+    <div class="notification-card">
+        <h4>Sự kiện mẫu 3 đã được duyệt</h4>
+        <p><small>Ngày: 2025-05-10</small></p>
+        <p>Sự kiện này đã được duyệt và sẽ diễn ra vào thời gian đã đăng ký.</p>
+        <p style="color: #2ecc71;">Đã đọc</p>
+    </div>
+
+        <div class="notification-card">
+        <h4>Sự kiện mẫu 7 đã bị từ chối</h4>
+        <p><small>Ngày: 2025-05-10</small></p>
+        <p style="color: #2ecc71;">Đã đọc</p>
+    </div>
+
+</div>
+
 </body>
 </html>

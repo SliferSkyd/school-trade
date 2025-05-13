@@ -292,8 +292,8 @@ class TradingOffer(models.Model):
 
 class Users(models.Model):
     id_user = models.AutoField(primary_key=True)
-    social_score = models.IntegerField(blank=True, null=True)
-    created_score = models.IntegerField(blank=True, null=True)
+    social_score = models.IntegerField(blank=True, null=True, default=0)
+    created_score = models.IntegerField(blank=True, null=True, default=0)
     id_school = models.ForeignKey(School, models.DO_NOTHING, db_column='id_school', blank=True, null=True)
     full_name = models.CharField(max_length=255, blank=True, null=True)
     email = models.CharField(unique=True, max_length=255, blank=True, null=True)
@@ -344,6 +344,7 @@ class Vote(models.Model):
     id_user = models.ForeignKey(Users, models.DO_NOTHING, db_column='id_user', blank=True, null=True)
     time_vote = models.DateTimeField(blank=True, null=True)
     id_notification = models.ForeignKey(Notification, models.DO_NOTHING, db_column='id_notification', blank=True, null=True)
+    rating = models.IntegerField(blank=True, null=True)
 
     class Meta:
         managed = True

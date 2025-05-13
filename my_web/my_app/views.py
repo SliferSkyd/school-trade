@@ -60,6 +60,7 @@ def get_dashboard_data():
         'approved_events': Event.objects.filter(status='Đã duyệt' or 'Đã đặt' or 'Đã bán'),
         'rejected_events': Event.objects.filter(status='Từ chối'),
         'categories': Category.objects.all(), 
+        
         'su_kien': Event.objects.all(),
         'bai_dang_thanh_ly': Post.objects.filter(status='Đã duyệt' or 'Đã đặt' or 'Đã bán', type_post='thanh lý'),
         'bai_dang_trao_doi': Post.objects.filter(status='Đã duyệt' or 'Đã đặt' or 'Đã bán', type_post='trao đổi'),
@@ -323,7 +324,6 @@ const member_labels = {{ member_labels|safe }};
 # Quản lý thành viên
 def member_management(request):
     return render(request, 'admin/member_management.html')
-
 
 
 from django.contrib import messages
@@ -713,7 +713,7 @@ def event_detail(request):
                 'school': school_name,
                 'participant_id': form.id_user.id_user,  # Include participant ID
                 'event_id': event.id_event,  # Include event ID
-                'school_name': school_name,  # Include school name
+                'school_name': school_name,
                 'id_participate_form': form.id_participate_form,  # Include id_participate_form
                 'status_form': form.status_form, 
                 'name_event': event.name,
@@ -851,9 +851,11 @@ def add_post(request):
         category_id = request.POST.get('category')
         post_type = request.POST.get('post_type')
         title = request.POST.get('title')
+        description = request.POST.get('description')
+        price = request.POST.get('price')
+        product_image = request.FILES.get('product_image')
         price = request.POST.get('price', 0)
         exchange_item = request.POST.get('exchange_item')
-        
         # Get the current user (assuming the user is logged in)
         user = Users.objects.get(username=request.user.username)
 
@@ -881,7 +883,6 @@ def add_post(request):
                 status='Chưa duyệt',  # Default status
                 date_created=timezone.now()
             )
-
         # Return a JSON response with success message
         return JsonResponse({'success': True})
 
@@ -968,11 +969,19 @@ def profile_view_u(request):
 
     approved_offers = TradingOffer.objects.filter(status="Đã duyệt", id_user=user)
 
-    print(approved_offers)
-   
+    # Add voting data to each offer
+    for offer in approved_offers:
+        vote = Vote.objects.filter(id_post=offer.id_post).first()
+        if vote:
+            offer.rating = vote.rating
+        else:
+            offer.rating = 0
+
 
     # Assign the result to the data dictionary
     data['completed_offers'] = approved_offers
+
+
 
     # Thống kê theo tháng
     mua_stats = Post.objects.filter(verified_person=user, type_post='thanh lý') \
@@ -1226,10 +1235,10 @@ def approve_participant(request, participate_form_id, action):
             return JsonResponse({'success': False, 'message': 'Tham gia sự kiện không tồn tại'})
 
     return JsonResponse({'success': False, 'message': 'Yêu cầu không hợp lệ'})
-
 from django.http import JsonResponse
 from django.utils import timezone
 from my_app.models import Post, Users, TradingOffer, Accounts
+
 def buy_post(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -1302,14 +1311,14 @@ def buy_post(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
-
 def orders(request):
     user = Users.objects.get(username=request.user.username)
 
     posts = Post.objects.filter(id_user=user)
 
     # Get the trading offers for those posts
-    trading_offers = TradingOffer.objects.filter(id_post__in=posts, status='Chờ duyệt')
+    from django.db.models import Q
+    trading_offers = TradingOffer.objects.filter(id_post__in=posts).filter(Q(status='Chờ duyệt') | Q(status='Đã duyệt'))
 
     context = {
         'trading_offers': trading_offers
@@ -1320,29 +1329,29 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from .models import TradingOffer, Post, Accounts, Transactions
 
+
 def approve_order(request, offer_id):
     if request.method == 'POST':
         # Parse the data sent from frontend
         data = json.loads(request.body)
         action = data.get('action')
+        price = data.get('price')
+        exchange_item = data.get('exchange_item')
 
         try:
             offer = get_object_or_404(TradingOffer, id_trading_offer=offer_id)
             post = offer.id_post
             
             # Handle the action (approve or reject)
-            if action == 'approve':
-                # Approve the order based on post type
+            if action == 'confirm':
                 if post.type_post == 'thanh lý':  # Sale post
-                    # Approve the sale and change post status to "Đã bán"
-                    post.status = 'Đã bán'  # Set post status to "Sold"
-                    post.save()
-                    offer.status = 'Đã duyệt'  # Change offer status to 'Approved'
-                    offer.save()
-
                     # Handle the financial transaction
                     buyer = offer.id_user
                     buyer_account = Accounts.objects.get(user=buyer)
+
+                    if buyer_account.balance < post.price:
+                        return JsonResponse({'success': False, 'message': 'Bạn không đủ tiền để mua bài đăng'})
+
                     buyer_account.balance -= post.price  # Deduct the price from the buyer's account
                     buyer_account.save()
 
@@ -1350,7 +1359,11 @@ def approve_order(request, offer_id):
                     seller_account = Accounts.objects.get(user=seller)
                     seller_account.balance += post.price  # Add the price to the seller's account
                     seller_account.save()
-
+                    # Approve the sale and change post status to "Đã bán"
+                    post.status = 'Đã bán'  # Set post status to "Sold"
+                    post.save()
+                    offer.status = 'Hoàn thành'  # Change offer status to 'Approved'
+                    offer.save()
                     # Record the transaction
                     Transactions.objects.create(
                         from_account=buyer_account,
@@ -1361,23 +1374,64 @@ def approve_order(request, offer_id):
                         status='completed',
                         content=f"Người dùng {buyer.username} đã mua bài đăng: {post.title} với giá {post.price} VNĐ từ người dùng {seller.username}."
                     )
+                    Notification.objects.create(
+                        id_user=seller,
+                        content=f"Người dùng {buyer.username} đã mua bài đăng: {post.title}.",
+                        noti_time=timezone.now(),
+                        title='Thông báo giao dịch',
+                        status_read='Chưa đọc'
+                    )
 
                 elif post.type_post == 'trao đổi':  # Exchange post
                     # Approve the exchange and change post status to "Đã trao đổi"
                     post.status = 'Đã trao đổi'  # Set post status to "Exchanged"
                     post.save()
-                    offer.status = 'Đã duyệt'  # Change offer status to 'Approved'
+                    offer.status = 'Hoàn thành'  # Change offer status to 'Approved'
                     offer.save()
 
-                    # Handle the exchange process
-                    buyer = offer.id_user
-                    exchange_item_info = offer.description  # Assuming the buyer's exchange item info is saved in the offer's description
-                    # Create a transaction or notification for exchange if needed, e.g.:
-                    # You can handle specific logic for the exchange item info if needed (e.g. notifying the seller)
-                    
+                    Notification.objects.create(
+                        id_user=post.id_user,
+                        content=f"Người dùng {offer.id_user.username} đã đồng ý trao đổi bài đăng: {post.title}.",
+                        noti_time=timezone.now(),
+                        title='Thông báo giao dịch',
+                        status_read='Chưa đọc'
+                    )
 
                 # Optionally, you can delete the trading offer after processing
                 # offer.delete()
+
+                return JsonResponse({'success': True, 'message': 'Đơn hàng đã được xác nhận thành công!'})
+
+
+            if action == 'approve':
+                # Approve the order based on post type
+                if post.type_post == 'thanh lý':  # Sale post
+                    # Approve the sale and change post status to "Đã bán"
+                    post.price = price  # Set post price to the offer price
+                    post.save()
+                    offer.status = 'Đã duyệt'  # Change offer status to 'Approved'
+                    offer.save()
+
+                    Notification.objects.create(
+                        id_user=post.id_user,
+                        content=f"Người dùng {offer.id_user.username} đã đồng ý bán bài đăng: {post.title} với giá {price} VNĐ.",
+                        noti_time=timezone.now(),
+                        title='Thông báo giao dịch',
+                        status_read='Chưa đọc'
+                    )
+                elif post.type_post == 'trao đổi':  # Exchange post
+                    # Approve the exchange and change post status to "Đã trao đổi"
+                    offer.description = exchange_item  # Set exchange item info
+                    offer.status = 'Đã duyệt'  # Change offer status to 'Approved'
+                    offer.save()
+
+                    Notification.objects.create(
+                        id_user=post.id_user,
+                        content=f"Người dùng {offer.id_user.username} đã đồng ý trao đổi bài đăng: {post.title} với vật phẩm: {exchange_item}.",
+                        noti_time=timezone.now(),
+                        title='Thông báo giao dịch',
+                        status_read='Chưa đọc'
+                    )
 
                 return JsonResponse({'success': True, 'message': 'Đơn hàng đã được phê duyệt thành công!'})
 
@@ -1388,15 +1442,23 @@ def approve_order(request, offer_id):
                 offer.status = 'Từ chối'  # Change offer status to 'Rejected'
                 offer.save()
 
+                rejector = Users.objects.get(username=request.user.username)
+                other_user = (offer.id_user if offer.id_user != rejector else post.id_user)
+
+                Notification.objects.create(
+                    id_user=other_user,
+                    content=f"Người dùng {rejector.username} đã từ chối đơn hàng cho bài đăng: {post.title}.",
+                    noti_time=timezone.now(),
+                    title='Thông báo giao dịch',
+                    status_read='Chưa đọc'
+                )
+
                 return JsonResponse({'success': True, 'message': 'Đơn hàng đã bị từ chối'})
 
         except TradingOffer.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Đơn hàng không tồn tại'})
 
     return JsonResponse({'success': False, 'message': 'Yêu cầu không hợp lệ'})
-
-
-
 
 
 
@@ -1496,7 +1558,7 @@ def bibi_transfer(request):
                     amount=amount,
                     transaction_type="transfer",
                     transaction_date=timezone.now(),
-                    status="completed",
+                    status_read="completed",
                     content=content
                 )
 
@@ -1554,3 +1616,149 @@ def generate_account_id():
 # Hàm kiểm tra tài khoản ngân hàng có trùng không
 def is_account_id_exists(account_id):
     return Accounts.objects.filter(account_id=account_id).exists()
+
+from django.shortcuts import render, redirect
+from .models import Event
+
+from django.shortcuts import render, redirect
+from .models import Event
+from django.core.files.storage import FileSystemStorage
+
+def create_event(request, group_id):
+    if request.method == 'POST':
+        # Lấy các dữ liệu từ form
+        event_name = request.POST.get('name')
+        start_time = request.POST.get('start_time')
+        end_time = request.POST.get('end_time')
+        event_type = request.POST.get('event_type')
+        location = request.POST.get('location')
+        acc = request.POST.get('acc')
+        description = request.POST.get('description')
+
+        # Xử lý file ảnh nếu có
+        poster = request.FILES.get('poster')  # Nhận tệp ảnh từ form
+        if poster:
+            fs = FileSystemStorage()
+            filename = fs.save(poster.name, poster)
+            poster_url = fs.url(filename)
+        else:
+            poster_url = 'https://americor.com/wp-content/uploads/2022/12/default-scaled.jpeg'  # Dùng ảnh mặc định nếu không có ảnh upload
+
+        # Tạo sự kiện mới
+        new_event = Event.objects.create(
+            id_group=group_id,
+            type=event_type,
+            name=event_name,
+            start_time=start_time,
+            end_time=end_time,
+            location=location,
+            donated_amount=acc,
+            description=description,
+            status="Chưa duyệt",
+            poster=poster_url
+        )
+    return redirect('event_detail', event_id=new_event.id)
+
+
+from django.http import JsonResponse
+from .models import Post, Report, Notification
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+
+@login_required
+def report_post(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        post_id = data.get('post_id')
+        message = data.get('message')
+
+        try:
+            post = Post.objects.get(id_post=post_id)
+        
+            # Create a notification for the post owner that their post has been reported
+            notification_content = f"Bài đăng '{post.title}' của bạn đã bị báo cáo."
+            Notification.objects.create(
+                content=notification_content,
+                title="Báo cáo bài đăng",
+                id_user=post.id_user,  # The user who created the post
+                id_post=post,
+                noti_time=timezone.now(),
+                status_read='Unread',  # Set the status to 'Unread'
+            )
+
+            # Decrease the user's social score
+            user = post.id_user
+            user.social_score -= 1  # Decrease the user's social score by 1
+            user.save()
+
+            return JsonResponse({'success': True, 'message': 'Báo cáo thành công'})
+
+        except Post.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Bài đăng không tồn tại'})
+
+    return JsonResponse({'success': False, 'message': 'Yêu cầu không hợp lệ'})
+
+
+def user_notification_view(request):
+    user = Users.objects.get(username=request.user.username)
+    notifications = Notification.objects.filter(id_user=user).order_by('-noti_time')
+    
+    # Mark notifications as read
+    for notification in notifications:
+        notification.status_read = 'Read'
+        notification.save()
+
+    return render(request, 'user_/noti.html', {'notifications': notifications})
+
+def rate_post(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        post_id = data.get('post_id')
+        rating = int(data.get('rating'))
+
+        try:
+            post = get_object_or_404(Post, id_post=post_id)
+            
+            # Check if the post is already rated by the user
+            # You can create a model to track ratings for posts or make it a one-time action
+            # existing_rating = TradingOffer.objects.filter(id_post=post, id_user=buyer)
+            
+            #if existing_rating.exists():
+            #    return JsonResponse({'success': False, 'message': 'Bạn đã đánh giá bài đăng này rồi.'})
+
+            # Update the user's score based on the rating (for example, increase/decrease social score)
+            seller = post.id_user
+            
+            if Vote.objects.filter(id_post=post).exists():
+                # error handling if the user has already rated
+                return JsonResponse({'success': False, 'message': 'Bạn đã đánh giá bài đăng này rồi.'})
+            
+            if rating >= 4:
+                seller.created_score += 1
+            elif rating <= 2:
+                seller.created_score -= 1
+            seller.save()
+
+
+            Vote.objects.create(
+                id_post=post,
+                id_user=seller,
+                rating=rating,
+                time_vote=timezone.now()
+            )
+            # Create notification
+            notification = Notification.objects.create(
+                content=f'Bài đăng "{post.title}" đã nhận được đánh giá {rating} sao từ {seller.username}.',
+                title='Đánh giá bài đăng',
+                id_user=post.id_user,
+                id_post=post,
+                noti_time=timezone.now(),
+                status_read='Unread'
+            )
+
+            return JsonResponse({'success': True, 'message': 'Đánh giá thành công!'})
+        
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})

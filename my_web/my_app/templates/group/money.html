@@ -56,7 +56,7 @@
 </head>
 <body>
   <div class="sidebar">
-    <div class="admin-info">Quản trị - group1</div>
+    <div class="admin-info">Hội nhóm</div>
     
     <button onclick="window.location.href='{% url 'profile' %}'">Thông tin cá nhân</button>
     <button onclick="window.location.href='{% url 'member' %}'">Quản lý thành viên</button>
@@ -70,7 +70,7 @@
 
     <p>Số dư hiện tại: <span>{{ account.balance|floatformat:2 }} VND</span></p>
 
-    <!-- Form to Deposit Money -->
+    {% comment %} <!-- Form to Deposit Money -->
     <form method="POST" class="deposit-form">
         {% csrf_token %}
         <div class="form-group">
@@ -78,7 +78,7 @@
             <input type="number" id="deposit_amount" name="amount" min="0" class="form-control" required />
         </div>
         <button type="submit" name="deposit" class="btn btn-primary">Nạp tiền</button>
-    </form>
+    </form> {% endcomment %}
 
     <!-- Form to Withdraw Money -->
     <form method="POST" class="withdraw-form">

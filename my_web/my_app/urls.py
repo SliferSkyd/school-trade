@@ -13,7 +13,7 @@ urlpatterns = [
     path('user_event/', user_event, name='user_event'),
     path('user_post/', user_post, name='user_post'),
     path('events_u/participate/', participate_event, name='participate_event'),
-
+    
 
     path('admin/dashboard/', admin_dashboard, name='admin_dashboard'),
     path('user/dashboard/', user_dashboard, name='user_dashboard'),
@@ -24,6 +24,7 @@ urlpatterns = [
     path('group/add_event/', add_event, name='add_event'),
     path('group/edit_event/', edit_event, name='edit_event'),
     path('group/money/', money_view, name='money'),
+    path('events/create/<int:group_id>/', create_event, name='create_event'),
 
     path('api/members/<int:member_id>/', update_member, name='update-member'),
     path('group/profile/', profile_view, name='profile'),
@@ -59,6 +60,9 @@ urlpatterns = [
     path('posts_u/add/', add_post, name='add_post'),
     path('posts_u/', post_list, name='post_list'),
     path('events_u/', event_list, name='event_list'),
+    # urls.py
+    path('events/create/', create_event, name='create_event'),
+
     path('groups_u/', group_list, name='group_list'),
     path('profile_u/', profile_view_u, name='profile_u'),
     path('groups_u/join/<int:group_id>/', join_group_view, name='join_group'),
@@ -68,6 +72,9 @@ urlpatterns = [
 
 
     path('events_u/approve_participant/<int:participate_form_id>/<str:action>/', approve_participant, name='approve_participant'),
+    path('posts_u/report_post/', report_post, name='report_post'),
+    path('noti_u/', user_notification_view, name='noti_u'),
+    path('rate_post/', rate_post, name='rate_post'),
 
 
     path('bibi/', bibi_home_view, name='bibi_home'),

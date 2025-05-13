@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chi tiết sự kiện</title>
+  <title>Tạo sự kiện mới</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -42,51 +42,37 @@
       margin-left: 250px;
       padding: 20px;
     }
-    .notification-detail {
+    .form-section {
       background: white;
-      padding: 15px;
+      padding: 20px;
       margin-top: 10px;
       border-radius: 5px;
       box-shadow: 0 0 5px rgba(0,0,0,0.1);
     }
-    .event-image {
+    .form-section input,
+    .form-section select,
+    .form-section textarea {
       width: 100%;
-      max-width: 400px;
-      height: auto;
-      margin: 10px 0;
+      padding: 8px;
+      margin: 8px 0;
+      box-sizing: border-box;
     }
     .btn {
-      padding: 5px 10px;
-      margin: 5px;
+      padding: 8px 16px;
       border: none;
       border-radius: 3px;
+      background-color: #3498db;
+      color: white;
       cursor: pointer;
     }
-    select {
-      margin: 5px;
-      padding: 5px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    table, th, td {
-      border: 1px solid #ddd;
-    }
-    th, td {
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #f2f2f2;
+    .btn:hover {
+      background-color: #2980b9;
     }
   </style>
 </head>
 <body>
   <div class="sidebar">
-    <div class="admin-info">Quản trị - group1</div>
-    
+    <div class="admin-info">Hội nhóm</div>
     <button onclick="window.location.href='{% url 'profile' %}'">Thông tin cá nhân</button>
     <button onclick="window.location.href='{% url 'member' %}'">Quản lý thành viên</button>
     <button onclick="window.location.href='{% url 'event_detail' %}'">Quản lý sự kiện</button>  
@@ -94,50 +80,43 @@
     <button onclick="window.location.href='{% url 'noti' %}'">Thông báo</button>
     <a href="{% url 'logout' %}" class="btn btn-outline-danger">Đăng xuất</a>
   </div>
+
   <div class="content">
-    <h2>Chi tiết sự kiện</h2>
-    <div class="notification-detail">
-      <h3>Gây quỹ xây thư viện</h3>
-      <img src="https://via.placeholder.com/400x200?text=Ảnh+minh+họa+sự+kiện" alt="Ảnh minh họa sự kiện" class="event-image">
-      <p><strong>Người đăng:</strong> group1</p>
-      <p><strong>Ngày tạo:</strong> 2025-05-01</p>
-      <p><strong>Loại sự kiện:</strong> Gây quỹ</p>
-      <p><strong>Trạng thái:</strong> Đã duyệt</p>
-      <p><strong>Trạng thái đóng:</strong> Chưa đóng</p>
-      <p><strong>Danh mục:</strong> Giáo dục</p>
-      <p><strong>Nội dung:</strong> Huy động 50 triệu VND để xây thư viện.</p>
-      <p><strong>Số tiền đã quyên:</strong> 30,000,000 VND</p>
+    <h2>Tạo sự kiện mới</h2>
+    <div class="form-section">
+      <form method="POST" action="{% url 'create_event' group_id %}" enctype="multipart/form-data">
+        {% csrf_token %}
 
-      <h4>Thống kê số lượng người tham gia</h4>
-      <div>
-        <label>Bộ lọc thời gian:</label>
-        <select>
-          <option>Ngày</option>
-          <option>Tháng</option>
+        <label for="name">Tên sự kiện:</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="start_time">Thời gian bắt đầu:</label>
+        <input type="datetime-local" id="start_time" name="start_time" required>
+
+        <label for="end_time">Thời gian kết thúc:</label>
+        <input type="datetime-local" id="end_time" name="end_time" required>
+
+        <label for="event_type">Loại sự kiện:</label>
+        <select id="event_type" name="event_type" required>
+          <option value="">--Chọn loại--</option>
+          <option value="Gây quỹ">Gây quỹ</option>
+          <option value="Quyên góp">Quyên góp</option>
         </select>
-      </div>
-      <img src="https://via.placeholder.com/400x200?text=Thống+kê+số+lượng+người+tham+gia" alt="Thống kê số lượng người tham gia">
 
-      <h4>Danh sách người tham gia</h4>
-      <table>
-        <thead>
-          <tr>
-            <th>Tên người tham gia</th>
-            <th>Đóng góp</th>
-            <th>Chi tiết</th>
-            <th>Ngày tham gia</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>user2</td>
-            <td>5,000,000 VND</td>
-            <td>Đóng góp tiền</td>
-            <td>2025-05-05</td>
-          </tr>
-        </tbody>
-      </table>
-      <button class="btn">Quay lại</button>
+        <label for="location">Địa điểm:</label>
+        <input type="text" id="location" name="location" required>
+
+        <label for="acc">Số tài khoản:</label>
+        <input type="number" id="acc" name="acc" required>
+
+        <label for="poster">Ảnh sự kiện:</label>
+        <input type="file" id="poster" name="poster">
+
+        <label for="description">Nội dung sự kiện:</label>
+        <textarea id="description" name="description" rows="5" required></textarea>
+
+        <button type="submit" class="btn">Tạo sự kiện</button>
+      </form>
     </div>
   </div>
 </body>
