@@ -48,7 +48,12 @@
                 <h4>{{ post.title }}</h4>
                 <p>Người đăng: {{ user.full_name }}</p>
                 <p>Loại bài: {{ post.type_post }}</p>
-                <p>Giá: {{ post.price|floatformat:0 }} VND</p>
+                {% if post.type_post == 'thanh lý' %}
+                    <p>Giá: {{ post.price|floatformat:0 }} VND</p>
+                {% endif %}
+                {% if post.type_post == 'trao đổi' %}
+                    <p>Vật phẩm muốn trao đổi: {{ post.exchange_item }}</p>
+                {% endif %}
                 <button class="btn-primary" data-type="post" data-id="{{ post.id_post }}">Xem chi tiết</button>
             </div>
             {% empty %}
@@ -60,14 +65,23 @@
     <div class="section">
         <h3>Bài đăng đã mua/trao đổi thành công</h3>
         <div class="posts">
-            {% for post in completed_posts %}
+            {% for offer in completed_offers %}
             <div class="post-card">
                 <img src="https://i.pinimg.com/736x/c3/de/c5/c3dec50c8063a844e0d960463ee620b9.jpg" alt="Ảnh bài đăng" />
-                <h4>{{ post.title }}</h4>
-                <p>Người đăng: {{ post.id_user.full_name }}</p>
-                <p>Loại bài: {{ post.type_post }}</p>
-                {% if post.status == "Đã duyệt" %}
-                    <button class="btn-primary" data-type="post" data-id="{{ post.id_post }}">Xem chi tiết</button>
+                <h4>{{ offer.product_name }}</h4>
+                <p>Người đăng: {{ offer.id_post.id_user.full_name }}</p>
+                <p>Loại bài: {{ offer.id_post.type_post }}</p>
+
+                {% if offer.id_post.type_post == 'thanh lý' %}
+                    <p>Giá: {{ offer.id_post.price|floatformat:0 }} VND</p>
+                {% endif %}
+                
+                {% if offer.id_post.type_post == 'trao đổi' %}
+                    <p>Vật phẩm trao đổi: {{ offer.description }}</p>
+                {% endif %}
+
+                {% if offer.status == "Đã duyệt" %}
+                    <button class="btn-primary" data-type="post" data-id="{{ offer.id_post.id }}">Xem chi tiết</button>
                 {% else %}
                     <button class="btn-primary" disabled>Đã đóng</button>
                 {% endif %}

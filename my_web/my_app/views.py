@@ -969,14 +969,10 @@ def profile_view_u(request):
     approved_offers = TradingOffer.objects.filter(status="Đã duyệt", id_user=user)
 
     print(approved_offers)
-    
-# Get the posts associated with the approved offers where the buyer is the current user
-    buyer_posts = Post.objects.filter(
-        id_post__in=approved_offers.values('id_post')
-    )
+   
 
     # Assign the result to the data dictionary
-    data['completed_posts'] = buyer_posts
+    data['completed_offers'] = approved_offers
 
     # Thống kê theo tháng
     mua_stats = Post.objects.filter(verified_person=user, type_post='thanh lý') \
