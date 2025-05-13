@@ -13,6 +13,19 @@
         <p>Người mua: {{ offer.id_user.full_name }}</p>
         <p>Trạng thái: {{ offer.status }}</p>
 
+        <!-- Show price for sale posts (thanh lý) -->
+        {% if offer.id_post.type_post == 'thanh lý' %}
+            {% if offer.id_post.price %}
+                <p>Giá: {{ offer.id_post.price|floatformat:0 }} VND</p>
+            {% endif %}
+        {% endif %}
+
+        <!-- Show exchange item information for exchange posts (trao đổi) -->
+        {% if offer.id_post.type_post == 'trao đổi' %}
+            <p>Vật phẩm người mua muốn trao đổi: {{ offer.description }}</p>
+        {% endif %}
+
+        <!-- Approve or Reject buttons -->
         <button class="btn btn-success approve-button" data-id="{{ offer.id_trading_offer }}" data-post-id="{{ offer.id_post.id }}">Phê duyệt</button>
         <button class="btn btn-danger reject-button" data-id="{{ offer.id_trading_offer }}" data-post-id="{{ offer.id_post.id }}">Từ chối</button>
     </div>

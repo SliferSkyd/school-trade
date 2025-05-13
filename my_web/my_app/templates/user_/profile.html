@@ -44,7 +44,7 @@
         <div class="posts">
             {% for post in user_posts %}
             <div class="post-card">
-                <img src="{{ post.product_image }}" alt="Ảnh bài đăng" />
+                <img src="https://i.pinimg.com/736x/c3/de/c5/c3dec50c8063a844e0d960463ee620b9.jpg" alt="Ảnh bài đăng" />
                 <h4>{{ post.title }}</h4>
                 <p>Người đăng: {{ user.full_name }}</p>
                 <p>Loại bài: {{ post.type_post }}</p>
@@ -62,7 +62,7 @@
         <div class="posts">
             {% for post in completed_posts %}
             <div class="post-card">
-                <img src="{{ post.product_image }}" alt="Ảnh bài đăng" />
+                <img src="https://i.pinimg.com/736x/c3/de/c5/c3dec50c8063a844e0d960463ee620b9.jpg" alt="Ảnh bài đăng" />
                 <h4>{{ post.title }}</h4>
                 <p>Người đăng: {{ post.id_user.full_name }}</p>
                 <p>Loại bài: {{ post.type_post }}</p>

@@ -19,14 +19,6 @@
             <img src="{{ group.avt_group }}" alt="Ảnh đại diện nhóm" width="200" />
         {% endif %}
 
-        <form method="POST" action="{% url 'leave_group' group.id_group %}">
-            {% csrf_token %}
-            <button type="submit" class="btn-primary">Rời khỏi nhóm</button>
-        </form>
-        <form method="POST" action="{% url 'join_group' group.id_group %}">
-            {% csrf_token %}
-            <button type="submit" class="btn-primary">Tham gia nhóm</button>
-        </form>
 
         <!-- Nút xem chi tiết nhóm -->
         <a href="{% url 'group_detail' group.id_group %}">Xem chi tiết</a>

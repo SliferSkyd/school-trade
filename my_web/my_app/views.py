@@ -55,14 +55,14 @@ def get_dashboard_data():
         'event_quyen_gop': Event.objects.filter(status='Chưa duyệt', type='Quyên góp'),
         'unverified_posts': Post.objects.filter(status='Chưa duyệt'),
         'unverified_events': Event.objects.filter(status='Chưa duyệt'),
-        'approved_posts': Post.objects.filter(status='Đã duyệt'),
+        'approved_posts': Post.objects.filter(status='Đã duyệt' or 'Đã đặt' or 'Đã bán'),
         'rejected_posts': Post.objects.filter(status='Từ chối'),
-        'approved_events': Event.objects.filter(status='Đã duyệt'),
+        'approved_events': Event.objects.filter(status='Đã duyệt' or 'Đã đặt' or 'Đã bán'),
         'rejected_events': Event.objects.filter(status='Từ chối'),
         'categories': Category.objects.all(), 
         'su_kien': Event.objects.all(),
-        'bai_dang_thanh_ly': Post.objects.filter(status='Đã duyệt', type_post='thanh lý'),
-        'bai_dang_trao_doi': Post.objects.filter(status='Đã duyệt', type_post='trao đổi'),
+        'bai_dang_thanh_ly': Post.objects.filter(status='Đã duyệt' or 'Đã đặt' or 'Đã bán', type_post='thanh lý'),
+        'bai_dang_trao_doi': Post.objects.filter(status='Đã duyệt' or 'Đã đặt' or 'Đã bán', type_post='trao đổi'),
     }
 
 
@@ -221,11 +221,13 @@ def admin_dashboard(request):
         .order_by('month')
 
     post_types = ['trao đổi', 'thanh lý']
-    post_months = sorted({entry['month'] for entry in post_stats})
+    post_months = sorted({entry['month'] for entry in post_stats if entry['month'] is not None})
     post_month_index = {m: i for i, m in enumerate(post_months)}
     post_chart_data = {ptype: [0] * len(post_months) for ptype in post_types}
 
     for entry in post_stats:
+        if entry['month'] is None:
+            continue
         idx = post_month_index[entry['month']]
         post_chart_data[entry['type_post']][idx] = entry['count']
 
@@ -245,11 +247,13 @@ def admin_dashboard(request):
         .order_by('month')
 
     user_roles = ['học sinh', 'giáo viên', 'quản trị viên', 'kiểm duyệt viên', 'hội nhóm']
-    user_months = sorted({entry['month'] for entry in user_stats})
+    user_months = sorted({entry['month'] for entry in post_stats if entry['month'] is not None})
     user_month_index = {m: i for i, m in enumerate(user_months)}
     user_chart_data = {role: [0] * len(user_months) for role in user_roles}
 
     for entry in user_stats:
+        if entry['month'] is None:
+            continue
         idx = user_month_index[entry['month']]
         user_chart_data[entry['role']][idx] = entry['count']
 
@@ -710,7 +714,9 @@ def event_detail(request):
                 'participant_id': form.id_user.id_user,  # Include participant ID
                 'event_id': event.id_event,  # Include event ID
                 'school_name': school_name,  # Include school name
-                'id_participate_form': form.id_participate_form  # Include id_participate_form
+                'id_participate_form': form.id_participate_form,  # Include id_participate_form
+                'status_form': form.status_form, 
+                'name_event': event.name,
             })
 
         events.append({
@@ -835,7 +841,8 @@ def post_list(request):
 
     return render(request, 'user_/post.html', {
         'posts': posts,
-        'categories': categories
+        'categories': categories,
+        'user': Users.objects.get(username=request.user.username),
     })
 
 def add_post(request):
@@ -844,9 +851,8 @@ def add_post(request):
         category_id = request.POST.get('category')
         post_type = request.POST.get('post_type')
         title = request.POST.get('title')
-        description = request.POST.get('description')
-        price = request.POST.get('price')
-        product_image = request.FILES.get('product_image')
+        price = request.POST.get('price', 0)
+        exchange_item = request.POST.get('exchange_item')
         
         # Get the current user (assuming the user is logged in)
         user = Users.objects.get(username=request.user.username)
@@ -854,18 +860,27 @@ def add_post(request):
         # Get category object
         category = Category.objects.get(id_category=category_id)
 
-        # Create the new post object
-        post = Post.objects.create(
-            id_user=user,
-            id_category=category,
-            title=title,
-            content=description,
-            price=price,
-            type_post=post_type,
-            product_image=product_image,
-            status='Chưa duyệt',  # Default status
-            date_created=timezone.now()
-        )
+        if post_type == 'trao đổi':    
+            post = Post.objects.create(
+                id_user=user,
+                id_category=category,
+                title=title,
+                content=exchange_item,
+                type_post=post_type,
+                status='Chưa duyệt',  # Default status
+                date_created=timezone.now()
+            )
+            
+        else:
+            post = Post.objects.create(
+                id_user=user,
+                id_category=category,
+                title=title,
+                type_post=post_type,
+                price=price,
+                status='Chưa duyệt',  # Default status
+                date_created=timezone.now()
+            )
 
         # Return a JSON response with success message
         return JsonResponse({'success': True})
@@ -1043,7 +1058,7 @@ def statistics(request):
         .order_by('month')
 
     post_types = ['trao đổi', 'thanh lý']
-    post_months = sorted({entry['month'] for entry in post_stats})
+    post_months = sorted({entry['month'] for entry in post_stats if entry['month'] is not None})
     post_month_index = {m: i for i, m in enumerate(post_months)}
     post_chart_data = {ptype: [0] * len(post_months) for ptype in post_types}
 
@@ -1066,11 +1081,13 @@ def statistics(request):
         .order_by('month')
 
     user_roles = ['học sinh', 'giáo viên', 'quản trị viên', 'kiểm duyệt viên', 'hội nhóm']
-    user_months = sorted({entry['month'] for entry in user_stats})
+    user_months = sorted({entry['month'] for entry in post_stats if entry['month'] is not None})
     user_month_index = {m: i for i, m in enumerate(user_months)}
     user_chart_data = {role: [0] * len(user_months) for role in user_roles}
 
     for entry in user_stats:
+        if entry['month'] is None:
+            continue
         idx = user_month_index[entry['month']]
         user_chart_data[entry['role']][idx] = entry['count']
 
@@ -1213,14 +1230,15 @@ def approve_participant(request, participate_form_id, action):
             return JsonResponse({'success': False, 'message': 'Tham gia sự kiện không tồn tại'})
 
     return JsonResponse({'success': False, 'message': 'Yêu cầu không hợp lệ'})
+
 from django.http import JsonResponse
 from django.utils import timezone
 from my_app.models import Post, Users, TradingOffer, Accounts
-
 def buy_post(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         post_id = data.get('post_id')
+        exchange_item_info = data.get('exchange_item_info', None)  # Get exchange item info if any
 
         try:
             # Fetch the post and the buyer
@@ -1228,31 +1246,54 @@ def buy_post(request):
             buyer = Users.objects.get(username=request.user.username)
             buyer_account = Accounts.objects.get(user=buyer)  # Get the user's account
 
-            # Check if the buyer has enough balance
-            if buyer_account.balance >= post.price:
-                # Create a new TradingOffer instance
-                trading_offer = TradingOffer.objects.create(
-                    product_name=post.title,
-                    id_post=post,
-                    id_user=buyer,
-                    status="Chờ duyệt",  # Initially the offer is waiting for approval
-                    created_at=timezone.now()
-                )
+            # Handle sale posts (thanh lý)
+            if post.type_post == 'thanh lý':
+                # Check if the buyer has enough balance
+                if buyer_account.balance >= post.price:
+                    # Create a new TradingOffer instance for sale
+                    trading_offer = TradingOffer.objects.create(
+                        product_name=post.title,
+                        id_post=post,
+                        id_user=buyer,
+                        status="Chờ duyệt",  # Initially the offer is waiting for approval
+                        created_at=timezone.now(),
+                        description=f'Giá: {post.price} VNĐ',  # Add price as description
+                    )
 
-                # Update the post status to "Đã đặt"
-                post.status = "Đã đặt"
-                post.save()
+                    # Update the post status to "Đã đặt"
+                    post.status = "Đã đặt"
+                    post.save()
 
-                # Subtract the post price from the buyer's account balance
-                buyer_account.balance -= post.price
-                buyer_account.save()
+                    # Subtract the post price from the buyer's account balance
+                    buyer_account.balance -= post.price
+                    buyer_account.save()
 
-                # Optionally, create a notification or any other related processes
+                    return JsonResponse({'success': True, 'message': 'Đặt bài thành công!'})
 
-                return JsonResponse({'success': True, 'message': 'Đặt bài thành công!'})
+                else:
+                    return JsonResponse({'success': False, 'message': 'Bạn không đủ tiền để mua bài đăng'})
 
-            else:
-                return JsonResponse({'success': False, 'message': 'Bạn không đủ tiền để mua bài đăng'})
+            # Handle exchange posts (trao đổi)
+            elif post.type_post == 'trao đổi':
+                if exchange_item_info:
+                    # Create a new TradingOffer instance for exchange
+                    trading_offer = TradingOffer.objects.create(
+                        product_name=post.title,
+                        id_post=post,
+                        id_user=buyer,
+                        status="Chờ duyệt",  # Initially the offer is waiting for approval
+                        created_at=timezone.now(),
+                        description=exchange_item_info,  # Add exchange item info as description
+                    )
+
+                    # Update the post status to "Đã đặt"
+                    post.status = "Đã đặt"
+                    post.save()
+
+                    return JsonResponse({'success': True, 'message': 'Giao dịch trao đổi đã được tạo thành công!'})
+
+                else:
+                    return JsonResponse({'success': False, 'message': 'Vui lòng nhập thông tin vật phẩm muốn trao đổi'})
 
         except Post.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Bài đăng không tồn tại'})
@@ -1264,6 +1305,7 @@ def buy_post(request):
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
 
 def orders(request):
     user = Users.objects.get(username=request.user.username)
@@ -1277,6 +1319,10 @@ def orders(request):
         'trading_offers': trading_offers
     }
     return render(request, 'user_/order.html', context)
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from .models import TradingOffer, Post, Accounts, Transactions
 
 def approve_order(request, offer_id):
     if request.method == 'POST':
@@ -1284,40 +1330,60 @@ def approve_order(request, offer_id):
         data = json.loads(request.body)
         action = data.get('action')
 
-
         try:
             offer = get_object_or_404(TradingOffer, id_trading_offer=offer_id)
             post = offer.id_post
             
             # Handle the action (approve or reject)
             if action == 'approve':
-                # Approve the order and change post status to "Đã bán"
-                post.status = 'Đã bán'  # Set post status to "Sold"
-                post.save()
-                offer.status = 'Đã duyệt'  # Optionally change offer status to 'Approved'
-                offer.save()
-                # Create a record of the transaction and update the buyer's account
-                
-                
-                buyer = offer.id_user
-                buyer_account = Accounts.objects.get(user=buyer)
-                buyer_account.balance -= post.price  # Deduct the price from the buyer's account
-                buyer_account.save()
+                # Approve the order based on post type
+                if post.type_post == 'thanh lý':  # Sale post
+                    # Approve the sale and change post status to "Đã bán"
+                    post.status = 'Đã bán'  # Set post status to "Sold"
+                    post.save()
+                    offer.status = 'Đã duyệt'  # Change offer status to 'Approved'
+                    offer.save()
 
-                seller = post.id_user
-                seller_account = Accounts.objects.get(user=seller)
-                seller_account.balance += post.price  # Add the price to the seller's account
-                seller_account.save()
-                
-                Transactions.objects.create(
-                    from_account=buyer_account,
-                    to_account=seller.account,
-                    amount=post.price,
-                    transaction_type='buy',
-                    transaction_date=timezone.now(),
-                    status='completed',
-                    content=f"Người dùng {buyer.username} đã mua bài đăng: {post.title} với giá {post.price} VNĐ từ người dùng {seller.username}."
-                )
+                    # Handle the financial transaction
+                    buyer = offer.id_user
+                    buyer_account = Accounts.objects.get(user=buyer)
+                    buyer_account.balance -= post.price  # Deduct the price from the buyer's account
+                    buyer_account.save()
+
+                    seller = post.id_user
+                    seller_account = Accounts.objects.get(user=seller)
+                    seller_account.balance += post.price  # Add the price to the seller's account
+                    seller_account.save()
+
+                    # Record the transaction
+                    Transactions.objects.create(
+                        from_account=buyer_account,
+                        to_account=seller_account,
+                        amount=post.price,
+                        transaction_type='buy',
+                        transaction_date=timezone.now(),
+                        status='completed',
+                        content=f"Người dùng {buyer.username} đã mua bài đăng: {post.title} với giá {post.price} VNĐ từ người dùng {seller.username}."
+                    )
+
+                elif post.type_post == 'trao đổi':  # Exchange post
+                    # Approve the exchange and change post status to "Đã trao đổi"
+                    post.status = 'Đã trao đổi'  # Set post status to "Exchanged"
+                    post.save()
+                    offer.status = 'Đã duyệt'  # Change offer status to 'Approved'
+                    offer.save()
+
+                    # Handle the exchange process
+                    buyer = offer.id_user
+                    exchange_item_info = offer.description  # Assuming the buyer's exchange item info is saved in the offer's description
+                    # Create a transaction or notification for exchange if needed, e.g.:
+                    # You can handle specific logic for the exchange item info if needed (e.g. notifying the seller)
+                    
+
+                # Optionally, you can delete the trading offer after processing
+                # offer.delete()
+
+                return JsonResponse({'success': True, 'message': 'Đơn hàng đã được phê duyệt thành công!'})
 
             elif action == 'reject':
                 # Reject the order and revert post status to "Đã duyệt"
@@ -1326,15 +1392,13 @@ def approve_order(request, offer_id):
                 offer.status = 'Từ chối'  # Change offer status to 'Rejected'
                 offer.save()
 
-            # Delete the trading offer after processing
-            # offer.delete()
-
-            return JsonResponse({'success': True})
+                return JsonResponse({'success': True, 'message': 'Đơn hàng đã bị từ chối'})
 
         except TradingOffer.DoesNotExist:
             return JsonResponse({'success': False, 'message': 'Đơn hàng không tồn tại'})
 
     return JsonResponse({'success': False, 'message': 'Yêu cầu không hợp lệ'})
+
 
 
 

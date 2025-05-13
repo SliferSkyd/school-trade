@@ -49,11 +49,5 @@
     </div>
 </div>
 
-<!-- Nút "Rời khỏi nhóm" nếu người dùng đã tham gia -->
-
-    <form method="POST" action="{% url 'leave_group' group.id_group %}">
-        {% csrf_token %}
-        <button type="submit" class="btn-danger">Rời khỏi nhóm</button>
-    </form>
 
 {% endblock %}

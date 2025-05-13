@@ -1,6 +1,4 @@
 {% extends "base.html" %}
-{% load static %}
-
 {% block title %}Bài đăng{% endblock %}
 
 {% block content %}
@@ -30,23 +28,39 @@
              data-category="{{ post.id_category.name }}"
              data-id="{{ post.id_post }}"
              data-user="{{ post.id_user.id }}">
-            <img src="{{ post.product_image }}" alt="Ảnh bài đăng" />
+            <img src="https://i.pinimg.com/736x/c3/de/c5/c3dec50c8063a844e0d960463ee620b9.jpg" alt="Ảnh bài đăng" />
             <h4>{{ post.title }}</h4>
             <p>Người đăng: {{ post.id_user.full_name }}</p>
             <p>Loại bài: {{ post.type_post|title }}</p>
-            {% if post.price %}
-                <p>Giá: {{ post.price|floatformat:0 }} VND</p>
+
+            <!-- For Sale Posts - Show price -->
+            {% if post.type_post == 'thanh lý' %}
+                {% if post.price %}
+                    <p>Giá: {{ post.price|floatformat:0 }} VND</p>
+                {% endif %}
             {% endif %}
 
-            <!-- Show "Mua" button only for posts that do not belong to the current user -->
-            {% if post.id_user.id != request.user.id %}
-                <button class="btn-primary buy-button" data-id="{{ post.id_post }}">Mua</button>
+            <!-- For Exchange Posts - Show exchange item information -->
+            {% if post.type_post == 'trao đổi' %}
+                <p>Loại vật phẩm muốn trao đổi: {{ post.content }}</p>
+
+                <!-- Form for entering exchange item information by buyer (only shown for exchange posts) -->
+                <div class="exchange-item-info-form">
+                    <textarea id="exchange-item-info-{{ post.id_post }}" placeholder="Nhập thông tin vật phẩm muốn trao đổi" class="form-control"></textarea>
+                </div>
+            {% endif %}
+            
+             
+            <!-- Show "Giao dịch" button only for posts that do not belong to the current user -->
+            {% if post.id_user.id_user != user.id_user %}
+                <button class="btn-primary transaction-button" data-id="{{ post.id_post }}">Giao dịch</button>
             {% endif %}
         </div>
     {% empty %}
         <p>Không có bài đăng nào.</p>
     {% endfor %}
 </div>
+
 {% endblock %}
 
 {% block script %}
@@ -71,17 +85,28 @@
         });
     }
 
-    // Handle "Mua" button click
-    document.querySelectorAll('.buy-button').forEach(button => {
+    // Handle "Giao dịch" button click
+    document.querySelectorAll('.transaction-button').forEach(button => {
         button.addEventListener('click', function() {
             const postId = this.dataset.id;
-            const userId = {{ request.user.id }};
+            const userId = {{ request.user.id }};  // Assuming you want to pass user id
             const postCard = this.closest('.post-card');
+            const postType = postCard.dataset.type;
             
-            // Hide the post after purchase
+            // Handle exchange-specific data
+            const exchangeItemInfo = document.getElementById('exchange-item-info-' + postId)?.value;
+
+            // Hide the post after transaction initiation
             postCard.style.display = "none";
 
             // Send the request to create a TradingOffer instance
+            let additionalData = {};
+
+            // Only send exchange item info if it's an exchange post
+            if (postType === 'trao đổi' && exchangeItemInfo) {
+                additionalData = { exchange_item_info: exchangeItemInfo };
+            }
+
             fetch(`/posts_u/buy_post/`, {
                 method: 'POST',
                 headers: {
@@ -90,13 +115,14 @@
                 },
                 body: JSON.stringify({
                     post_id: postId,
-                    buyer_id: userId
+                    buyer_id: userId,
+                    ...additionalData // Include exchange item info for exchange posts
                 })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert("Đã tạo đơn hàng thành công!");
+                    alert("Giao dịch đã được tạo thành công!");
                 } else {
                     alert("Có lỗi xảy ra. Vui lòng thử lại.");
                 }

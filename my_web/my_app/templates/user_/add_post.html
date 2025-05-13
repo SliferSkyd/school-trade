@@ -1,6 +1,4 @@
 {% extends "base.html" %}
-{% load static %}
-
 {% block title %}Tạo Bài Đăng{% endblock %}
 
 {% block content %}
@@ -19,7 +17,6 @@
         </select>
     </div>
 
-
     <div class="form-group">
         <label for="postType">Loại bài đăng:</label>
         <select id="postType" name="post_type" required class="form-control">
@@ -33,23 +30,16 @@
         <input type="text" id="title" name="title" class="form-control" required />
     </div>
 
-    <div class="form-group">
-        <label for="product_image">Ảnh sản phẩm:</label>
-        <input type="file" id="product_image" name="product_image" accept="image/*" class="form-control" required />
-        <div id="image-preview-container" style="display:none;">
-            <h4>Preview:</h4>
-            <img id="image-preview" src="" alt="Product Image Preview" width="300" class="img-thumbnail" />
-        </div>
-    </div>
 
-    <div class="form-group">
-        <label for="description">Mô tả sản phẩm:</label>
-        <textarea id="description" name="description" rows="4" class="form-control" required></textarea>
-    </div>
-
-    <div class="form-group">
+    <!-- Conditional fields based on post type -->
+    <div id="priceField" class="form-group" style="display:none;">
         <label for="price">Giá:</label>
         <input type="number" id="price" name="price" step="0.01" min="0" class="form-control" />
+    </div>
+
+    <div id="exchangeField" class="form-group" style="display:none;">
+        <label for="exchange_item">Loại vật phẩm muốn trao đổi:</label>
+        <input type="text" id="exchange_item" name="exchange_item" class="form-control" placeholder="Nhập vật phẩm muốn trao đổi" />
     </div>
 
     <div class="form-group">
@@ -63,6 +53,24 @@
 
 {% block script %}
 <script>
+    // Update form fields based on selected post type
+    document.getElementById('postType').addEventListener('change', function() {
+        const postType = this.value;
+        const priceField = document.getElementById('priceField');
+        const exchangeField = document.getElementById('exchangeField');
+
+        // Show or hide price and exchange item fields based on the post type
+        if (postType === 'thanh lý') {
+            priceField.style.display = 'block'; // Show price field for sale posts
+            exchangeField.style.display = 'none'; // Hide exchange field for sale posts
+        } else if (postType === 'trao đổi') {
+            priceField.style.display = 'none'; // Hide price field for exchange posts
+            exchangeField.style.display = 'block'; // Show exchange field for exchange posts
+        }
+    });
+
+    // Trigger the change event to set the initial form state
+    document.getElementById('postType').dispatchEvent(new Event('change'));
 
     // Get CSRF token from the cookie
     function getCSRFToken() {
@@ -74,19 +82,6 @@
         });
         return csrfToken;
     }
-    // Handle image preview
-    document.getElementById('product_image').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const imagePreview = document.getElementById('image-preview');
-                imagePreview.src = event.target.result;
-                document.getElementById('image-preview-container').style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        }
-    });
 
     // Form validation and submission
     document.getElementById('create-post-form').addEventListener('submit', function(e) {
@@ -95,14 +90,20 @@
         const title = document.getElementById('title').value.trim();
         const category = document.getElementById('category').value;
         const postType = document.getElementById('postType').value;
-        const description = document.getElementById('description').value.trim();
         const price = document.getElementById('price').value.trim();
-        const productImage = document.getElementById('product_image').files[0];
+        const exchangeItem = document.getElementById('exchange_item').value.trim();
 
         // Validate form fields
-        if (!title || !category || !postType || !description) {
+        if (!title || !category || !postType) {
             document.getElementById('feedback').textContent = 'Vui lòng điền đầy đủ thông tin!';
             return;
+        }
+
+        let additionalData = {};
+        if (postType === 'thanh lý' && price) {
+            additionalData = { price: price };
+        } else if (postType === 'trao đổi' && exchangeItem) {
+            additionalData = { exchange_item: exchangeItem };
         }
 
         // Submit the form if everything is valid
@@ -110,9 +111,8 @@
         formData.append('category', category);
         formData.append('post_type', postType);
         formData.append('title', title);
-        formData.append('description', description);
         formData.append('price', price);
-        formData.append('product_image', productImage);
+        formData.append('exchange_item', exchangeItem);
 
         // Use fetch to submit the form data
         fetch(window.location.href, {
